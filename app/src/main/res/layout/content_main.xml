@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -9,22 +9,31 @@
     tools:showIn="@layout/activity_main">
 
     <TextView
-        android:layout_width="107dp"
-        android:layout_height="31dp"
-        android:text="SMSEncryption"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_bias="0.167"
-        app:layout_constraintVertical_bias="0.073" />
+        android:id="@+id/labelPhoneNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Insert Phone Number:"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="40dp"
+        />
 
-    <TextView
-        android:id="@+id/textView"
+    <EditText
+        android:id="@+id/txtPhoneNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:layout_marginTop="55dp"
+        />
+
+    <Button
+        android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        tools:layout_editor_absoluteX="36dp"
-        tools:layout_editor_absoluteY="-49dp" />
+        android:layout_marginTop="20dp"
+        android:text="Start"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txtPhoneNumber"/>
 
-</android.support.constraint.ConstraintLayout>
+</RelativeLayout>
