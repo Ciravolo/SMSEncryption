@@ -9,10 +9,10 @@
     tools:showIn="@layout/activity_main">
 
     <TextView
-        android:id="@+id/labelPhoneNumber"
+        android:id="@+id/lblPhoneNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Insert Phone Number:"
+        android:text="Enter the phone number of the recipient:"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="40dp"
@@ -27,11 +27,49 @@
         android:layout_marginTop="55dp"
         />
 
+    <TextView
+        android:id="@+id/lblMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Message"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="100dp"
+        />
+
+    <EditText
+        android:id="@+id/txtMessage"
+        android:layout_width="match_parent"
+        android:ems="10"
+        android:layout_height="120dp"
+        android:inputType="textPersonName"
+        android:layout_marginTop="120dp"
+        />
+
+    <TextView
+        android:id="@+id/lblGeneratedPin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Generated PIN"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="250dp"
+        />
+
+    <EditText
+        android:id="@+id/txtPin"
+        android:layout_width="match_parent"
+        android:ems="10"
+        android:layout_height="wrap_content"
+        android:inputType="none"
+        android:layout_marginTop="270dp"
+        />
+
     <Button
         android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="270dp"
         android:text="Start"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/txtPhoneNumber"/>
