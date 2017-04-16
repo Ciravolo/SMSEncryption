@@ -12,7 +12,7 @@
         android:id="@+id/lblPhoneNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Enter the phone number of the recipient:"
+        android:text="Enter the phone number of the recipient"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="40dp"
