@@ -7,14 +7,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.telephony.SmsManager;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -46,13 +43,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v){
                 //perform the action on click
                 String phoneNumber = txtPhoneNumber.getText().toString();
-
-                String message = "this is a random message";
+                String message = txtMessage.getText().toString();
 
                 if (phoneNumber.length()>0 && message.length()>0){
 
-                    /* This code is in case you want to send the message from the SMS app of the phone
-                    Intent intentSMS = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:"+ phoneNumber));
+                    /*Intent intentSMS = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:"+ phoneNumber));
                     intentSMS.putExtra("sms body", message);
                     startActivity(intentSMS);*/
                     sendSMS(phoneNumber, message);
@@ -136,8 +131,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }, new IntentFilter(DELIVERED));
 
-        SmsManager sms = SmsManager.getDefault();
-        sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
+
+
+        try{
+            SmsManager sms = SmsManager.getDefault();
+            Toast.makeText(getApplicationContext(), "Phone number to send:"+phoneNumber, Toast.LENGTH_LONG).show();
+            sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
+        } catch(Exception e){
+            Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
     }
 
     @Override
