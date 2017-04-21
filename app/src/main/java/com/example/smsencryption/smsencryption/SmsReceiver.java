@@ -39,7 +39,7 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += "SMS from " + msgs[i].getOriginatingAddress();
                 str += " :";
                 str += msgs[i].getMessageBody().toString();
-                str += "n";
+                str += "\n";
             }
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
