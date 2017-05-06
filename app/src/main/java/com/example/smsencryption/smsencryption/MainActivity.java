@@ -8,6 +8,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.provider.Settings;
 import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -17,14 +19,31 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.binary.Base64;
+import android.os.Handler;
+import java.security.NoSuchAlgorithmException;
+
+import java.security.SecureRandom;
 
 public class MainActivity extends AppCompatActivity {
 
     Button btnStart;
+    Button btnGetNonce;
+
+    TextView lblTime;
+    TextView lblNonce;
+
+    EditText txtNonce;
     EditText txtPhoneNumber;
-    EditText txtMessage;
-    EditText txtPin;
+
+    private boolean isTimerEnabled = false;
+
+    private static final String ALGORITHM = "AES";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +53,10 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
-        txtMessage = (EditText) findViewById(R.id.txtMessage);
-        txtPin = (EditText) findViewById(R.id.txtPin);
+        txtNonce = (EditText) findViewById(R.id.txtNonce);
+
+        lblTime = (TextView) findViewById(R.id.lblTime);
+        lblNonce = (TextView) findViewById(R.id.lblNonce);
 
         btnStart = (Button) findViewById(R.id.btnStart);
         btnStart.setOnClickListener(new View.OnClickListener(){
@@ -43,20 +64,19 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v){
                 //perform the action on click
                 String phoneNumber = txtPhoneNumber.getText().toString();
-                String message = txtMessage.getText().toString();
+                String nonce = txtNonce.getText().toString();
 
-                if (phoneNumber.length()>0 && message.length()>0){
+                if (phoneNumber.length()>0 && nonce.length()>0){
+                    //if the fields are full then send the message
 
-                    /*Intent intentSMS = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:"+ phoneNumber));
-                    intentSMS.putExtra("sms body", message);
-                    startActivity(intentSMS);*/
-                    sendSMS(phoneNumber, message);
+                    //here I have to hash the key with the nonce????
 
+                    sendSMS(phoneNumber, nonce);
                 } else{
 
                     new AlertDialog.Builder(MainActivity.this)
                             .setTitle("Alert")
-                            .setMessage("Please insert a phone number before starting the protocol.")
+                            .setMessage("Please fill all the fields before starting the protocol.")
                             .setCancelable(false)
                             .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                                 @Override
@@ -70,9 +90,66 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        // button to obtain a new nonce
+        btnGetNonce = (Button) findViewById(R.id.btnGetNonce);
+        btnGetNonce.setOnClickListener(new View.OnClickListener(){
+
+            //start the timer for the nonce
+            public void onClick(View v){
+
+                if (!isTimerEnabled){
+
+                    new CountDownTimer(30000, 1000) {
+
+                        public void onTick(long millisUntilFinished) {
+                            isTimerEnabled = true;
+                            lblTime.setText("Time: " + millisUntilFinished / 1000);
+                            //here you can have your logic to set text to edittext
+                        }
+
+                        public void onFinish() {
+                            lblTime.setText("Nonce has expired");
+                            isTimerEnabled = false;
+                        }
+
+                    }.start();
+
+                    byte[] nonce = generateNonce();
+                    Integer intNonce = java.nio.ByteBuffer.wrap(nonce).getInt();
+                    intNonce = Math.abs(intNonce);
+                    short shortNonce = intNonce.shortValue();
+                    Toast.makeText(getBaseContext(), Short.toString(shortNonce),
+                            Toast.LENGTH_SHORT).show();
+
+                }
+
+
+
+               // if(sr!=null){
+
+                //}
+
+            }
+        });
     }
 
-    private void sendSMS(String phoneNumber, String message){
+        private byte[] generateNonce(){
+            try{
+                SecureRandom random = new SecureRandom();
+                byte[] values = new byte[20];
+                random.nextBytes(values);
+                return values;
+            }
+            catch(Exception e){
+                //case in which the nonce could not be created
+                Toast.makeText(getBaseContext(), "Could not create nonce",
+                        Toast.LENGTH_SHORT).show();
+                return null;
+            }
+        }
+
+        private void sendSMS(String phoneNumber, String message){
 
         String SENT = "SMS_SENT";
         String DELIVERED = "SMS_DELIVERED";

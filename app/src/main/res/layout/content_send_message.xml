@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.smsencryption.smsencryption.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:context="com.example.smsencryption.smsencryption.SendMessageActivity"
+    tools:showIn="@layout/activity_send_message">
 
     <TextView
         android:id="@+id/lblPhoneNumber"
@@ -27,53 +27,69 @@
         android:layout_marginTop="55dp"
         />
 
-    <Button
-        android:id="@+id/btnGetNonce"
-        android:layout_width="100dp"
+    <TextView
+        android:id="@+id/lblPinA"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Nonce"
+        android:text="Pin A"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="100dp"
         />
 
     <EditText
-        android:id="@+id/txtNonce"
+        android:id="@+id/txtPinA"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:layout_marginTop="120dp"
+        />
+
+    <TextView
+        android:id="@+id/lblPinB"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pin B"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="160dp"
+        />
+
+    <EditText
+        android:id="@+id/txtPinB"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:layout_marginTop="175dp"
+        />
+
+    <TextView
+        android:id="@+id/lblMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Message"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="220dp"
+        />
+
+    <EditText
+        android:id="@+id/txtMessage"
         android:layout_width="match_parent"
         android:ems="10"
         android:layout_height="120dp"
         android:inputType="textPersonName"
-        android:layout_marginTop="80dp"
-        />
-
-    <TextView
-        android:id="@+id/lblTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Time: "
-        android:textColor="@color/black"
-        android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="110dp"
-        android:layout_marginLeft="120dp"
-        />
-
-    <TextView
-        android:id="@+id/lblNonce"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Nonce generated:"
-        android:textColor="@color/black"
-        android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="130dp"
-        android:layout_marginLeft="120dp"
+        android:layout_marginTop="230dp"
         />
 
     <Button
-        android:id="@+id/btnStart"
+        android:id="@+id/btnSend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="180dp"
-        android:text="Start Protocol"
+        android:layout_marginTop="270dp"
+        android:text="Send"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/txtPhoneNumber"/>
 

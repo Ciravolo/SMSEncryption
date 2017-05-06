@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.smsencryption.smsencryption.StartActivity"
+    tools:showIn="@layout/activity_start">
+
+    <Button
+        android:id="@+id/btnStartProtocol"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="130dp"
+        android:text="Start Protocol"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txtPhoneNumber"/>
+
+    <Button
+        android:id="@+id/btnIHaveAKey"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="200dp"
+        android:text="I have a key"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txtPhoneNumber"/>
+
+    <Button
+        android:id="@+id/btnSendMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="270dp"
+        android:text="Send message"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txtPhoneNumber"/>
+
+</RelativeLayout>

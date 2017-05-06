@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.smsencryption.smsencryption.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:context="com.example.smsencryption.smsencryption.Main2Activity"
+    tools:showIn="@layout/activity_main2">
 
     <TextView
         android:id="@+id/lblPhoneNumber"
@@ -27,53 +27,50 @@
         android:layout_marginTop="55dp"
         />
 
-    <Button
-        android:id="@+id/btnGetNonce"
-        android:layout_width="100dp"
+    <TextView
+        android:id="@+id/lblMessage"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Nonce"
+        android:text="Message"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="100dp"
         />
 
     <EditText
-        android:id="@+id/txtNonce"
+        android:id="@+id/txtMessage"
         android:layout_width="match_parent"
         android:ems="10"
         android:layout_height="120dp"
         android:inputType="textPersonName"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="120dp"
         />
 
     <TextView
-        android:id="@+id/lblTime"
+        android:id="@+id/lblGeneratedPin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Time: "
+        android:text="Generated PIN"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="110dp"
-        android:layout_marginLeft="120dp"
+        android:layout_marginTop="250dp"
         />
 
-    <TextView
-        android:id="@+id/lblNonce"
+    <EditText
+        android:id="@+id/txtPin"
         android:layout_width="match_parent"
+        android:ems="10"
         android:layout_height="wrap_content"
-        android:text="Nonce generated:"
-        android:textColor="@color/black"
-        android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="130dp"
-        android:layout_marginLeft="120dp"
+        android:inputType="none"
+        android:layout_marginTop="270dp"
         />
 
     <Button
         android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="180dp"
-        android:text="Start Protocol"
+        android:layout_marginTop="270dp"
+        android:text="Start"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/txtPhoneNumber"/>
 
