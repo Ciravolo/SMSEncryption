@@ -117,18 +117,15 @@ public class MainActivity extends AppCompatActivity {
 
                     byte[] nonce = generateNonce();
                     Integer intNonce = java.nio.ByteBuffer.wrap(nonce).getInt();
-                    intNonce = Math.abs(intNonce);
                     short shortNonce = intNonce.shortValue();
-                    Toast.makeText(getBaseContext(), Short.toString(shortNonce),
-                            Toast.LENGTH_SHORT).show();
+
+                    if(shortNonce<0){
+                        shortNonce = (short) (shortNonce * -1);
+                    }
+
+                    lblNonce.setText("Nonce generated: "+ shortNonce);
 
                 }
-
-
-
-               // if(sr!=null){
-
-                //}
 
             }
         });
