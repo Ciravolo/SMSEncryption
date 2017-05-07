@@ -28,49 +28,30 @@
         />
 
     <TextView
-        android:id="@+id/lblMessage"
+        android:id="@+id/lblEnterKey"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Message"
+        android:text="Enter the key received to start the protocol:"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="100dp"
         />
 
     <EditText
-        android:id="@+id/txtMessage"
+        android:id="@+id/txtSharedKey"
         android:layout_width="match_parent"
         android:ems="10"
-        android:layout_height="120dp"
+        android:layout_height="40dp"
         android:inputType="textPersonName"
         android:layout_marginTop="120dp"
         />
 
-    <TextView
-        android:id="@+id/lblGeneratedPin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Generated PIN"
-        android:textColor="@color/black"
-        android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="250dp"
-        />
-
-    <EditText
-        android:id="@+id/txtPin"
-        android:layout_width="match_parent"
-        android:ems="10"
-        android:layout_height="wrap_content"
-        android:inputType="none"
-        android:layout_marginTop="270dp"
-        />
-
     <Button
-        android:id="@+id/btnStart"
+        android:id="@+id/btnSend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="270dp"
-        android:text="Start"
+        android:layout_marginTop="100dp"
+        android:text="Send"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/txtPhoneNumber"/>
 

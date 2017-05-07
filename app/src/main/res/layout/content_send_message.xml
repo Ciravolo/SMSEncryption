@@ -27,69 +27,78 @@
         android:layout_marginTop="55dp"
         />
 
-    <TextView
-        android:id="@+id/lblPinA"
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/btnGetNonce"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:text="Pin A"
+        android:text="Get Nonce"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="100dp"
         />
 
     <EditText
-        android:id="@+id/txtPinA"
+        android:id="@+id/txtNonce"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:ems="10"
+        android:layout_height="50dp"
         android:inputType="textPersonName"
-        android:layout_marginTop="120dp"
-        />
-
-    <TextView
-        android:id="@+id/lblPinB"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Pin B"
-        android:textColor="@color/black"
-        android:layout_marginBottom="@dimen/margin_text_bottom"
         android:layout_marginTop="160dp"
         />
 
-    <EditText
-        android:id="@+id/txtPinB"
+    <TextView
+        android:id="@+id/lblTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:layout_marginTop="175dp"
+        android:text="Time: "
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="110dp"
+        android:layout_marginLeft="120dp"
         />
 
     <TextView
-        android:id="@+id/lblMessage"
+        android:id="@+id/lblNonce"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Message"
+        android:text="Nonce generated:"
         android:textColor="@color/black"
         android:layout_marginBottom="@dimen/margin_text_bottom"
-        android:layout_marginTop="220dp"
+        android:layout_marginTop="130dp"
+        android:layout_marginLeft="120dp"
         />
+
+
+    <TextView
+        android:id="@+id/lblPKGenerated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enter the shared key: "
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="240dp"
+        />
+
 
     <EditText
-        android:id="@+id/txtMessage"
+        android:id="@+id/txtSharedKey"
         android:layout_width="match_parent"
         android:ems="10"
-        android:layout_height="120dp"
+        android:layout_height="50dp"
         android:inputType="textPersonName"
-        android:layout_marginTop="230dp"
+        android:layout_marginTop="215dp"
+        android:layout_marginLeft="140dp"
+        android:layout_marginRight="100dp"
         />
 
+
+
     <Button
-        android:id="@+id/btnSend"
+        android:id="@+id/btnStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="270dp"
-        android:text="Send"
+        android:layout_marginTop="200dp"
+        android:text="Start Protocol"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/txtPhoneNumber"/>
 
