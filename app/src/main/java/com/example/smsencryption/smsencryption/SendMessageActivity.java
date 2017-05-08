@@ -28,7 +28,6 @@ import org.apache.commons.codec.binary.Base64;
 import java.nio.ByteBuffer;
 
 import java.security.SecureRandom;
-import java.util.Formatter;
 
 public class SendMessageActivity extends AppCompatActivity {
 
@@ -56,13 +55,14 @@ public class SendMessageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_send_message);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtNonce = (EditText) findViewById(R.id.txtNonce);
         txtSharedKey = (EditText) findViewById(R.id.txtSharedKey);
+        txtMessage = (EditText) findViewById(R.id.txtMessage);
 
         lblTime = (TextView) findViewById(R.id.lblTime);
         lblNonce = (TextView) findViewById(R.id.lblNonce);
@@ -186,38 +186,6 @@ public class SendMessageActivity extends AppCompatActivity {
         }
 
         return null;
-    }
-
-
-
-    private static String byteArray2Hex(final byte[] hash){
-
-        Formatter formatter = new Formatter();
-        for (byte b : hash) {
-            formatter.format("%02x", b);
-        }
-        return formatter.toString();
-    }
-
-    /**
-     * Xor arrays from 2 array of bytes of the same size, by default obtaining the length for the
-     * result from the first array
-     * @param array1
-     * @param array2
-     * @return
-     */
-    private byte[] xor_arrays(byte[] array1, byte[] array2){
-
-        int length1 = array1.length;
-        byte[] result = new byte[length1];
-
-        int i =0;
-
-        for (byte b : array1){
-            result[i] = (byte)(b ^ array2[i++]);
-        }
-
-        return result;
     }
 
     private byte[] generateNonce(){
