@@ -9,6 +9,12 @@ import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.widget.Toast;
 
+import org.apache.commons.codec.binary.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 /**
  * Created by joana on 4/16/17.
  */
@@ -17,6 +23,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
     @Override
     public void onReceive(Context context, Intent intent) {
+
+        String decryptData = intent.getStringExtra("DATA_ENCRYPTED");
+        String sharedKey = intent.getStringExtra("SHARED_KEY");
+        String nonce = intent.getStringExtra("NONCE");
 
         //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
@@ -41,8 +51,32 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += msgs[i].getMessageBody().toString();
                 str += "\n";
             }
+
+            if ((decryptData!=null)&&(sharedKey!=null)&&(nonce!=null)){
+             if (decryptData.compareTo("1")==0){
+                 str = decrypt(sharedKey,nonce,decryptData);
+             }
+            }
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public static String decrypt(String key, String initVector, String encrypted) {
+        try {
+            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
+            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+
+            byte[] original = cipher.doFinal(Base64.decodeBase64(encrypted));
+
+            return new String(original);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 }

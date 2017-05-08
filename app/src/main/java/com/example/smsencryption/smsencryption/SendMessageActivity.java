@@ -29,6 +29,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import android.os.Handler;
 
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -46,17 +47,17 @@ public class SendMessageActivity extends AppCompatActivity {
 
     EditText txtNonce;
     EditText txtPhoneNumber;
+    EditText txtSharedKey;
+    EditText txtMessage;
 
     private boolean isTimerEnabled = false;
-    private boolean publicKeyNoGenerated = false;
 
     private String nonceText;
-
-    private byte[] arrPublicKey;
-    private SecretKey publicKey;
-    private short shortPublicKey;
-
     private byte[] arrNonce;
+    private String stringNonce;
+
+    String stringPK;
+    String nonce_generated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +68,7 @@ public class SendMessageActivity extends AppCompatActivity {
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtNonce = (EditText) findViewById(R.id.txtNonce);
+        txtSharedKey = (EditText) findViewById(R.id.txtSharedKey);
 
         lblTime = (TextView) findViewById(R.id.lblTime);
         lblNonce = (TextView) findViewById(R.id.lblNonce);
@@ -74,49 +76,27 @@ public class SendMessageActivity extends AppCompatActivity {
 
         btnStart = (Button) findViewById(R.id.btnStart);
 
-        //Generate the public key
-        try{
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(128);
-            publicKey = keyGen.generateKey();
-            arrPublicKey = publicKey.getEncoded();
-
-            Integer intPKey = java.nio.ByteBuffer.wrap(arrPublicKey).getInt();
-            shortPublicKey = intPKey.shortValue();
-
-            if (shortPublicKey<0){
-                shortPublicKey = (short) (shortPublicKey * -1);
-            }
-            lblPKGenerated.setText("Public Key generated: "+shortPublicKey);
-        }
-        catch(NoSuchAlgorithmException e){
-
-            publicKeyNoGenerated = true;
-            Toast.makeText(getBaseContext(), "Could not generate public key",
-                    Toast.LENGTH_SHORT).show();
-        }
-
         btnStart.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
                 //perform the action on click
                 String phoneNumber = txtPhoneNumber.getText().toString();
                 String nonce = txtNonce.getText().toString();
+                String publicKey = txtSharedKey.getText().toString();
+                String message = txtMessage.getText().toString();
 
-                if (phoneNumber.length()>0 && nonce.length()>0){
-                    //if the fields are full then send the message = hash (xor(nonce and public key))
+                if (phoneNumber.length()>0 && nonce.length()>0 && publicKey.length()>0 && message.length()>0){
 
-                    //first xor the array of bytes
                     if (nonce.compareTo(nonceText)==0){
+                        //if the nonce matches then encrypt the message and send it
+                        short shortPK = Short.parseShort(publicKey);
+                        int intPK = (int) shortPK;
+                        byte[] encodedPK = ByteBuffer.allocate(4).putInt(intPK).array();
+                        stringPK = new String(encodedPK);
+                        nonce_generated = new String(arrNonce);
 
-                        //first : xor(nonce + pkey)
-                        if (!publicKeyNoGenerated){
-                            //means that the public key was correctly generated, then xor both pk and nonce
-                            byte[] xor_nonce_pk_array = xor_arrays(arrNonce, arrPublicKey);
-
-
-
-                        }
+                        String encryptedMessage = encrypt(stringPK, nonce_generated, message);
+                        sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
                     else{
                         //insert the appropriate nonce in the textfield
@@ -183,7 +163,8 @@ public class SendMessageActivity extends AppCompatActivity {
                     if(shortNonce<0){
                         shortNonce = (short) (shortNonce * -1);
                     }
-                    lblNonce.setText("Nonce generated: "+ shortNonce);
+                    stringNonce = String.valueOf(shortNonce);
+                    lblNonce.setText("Nonce generated: "+ stringNonce);
                     nonceText = Short.toString(shortNonce);
 
                 }
@@ -213,23 +194,7 @@ public class SendMessageActivity extends AppCompatActivity {
         return null;
     }
 
-    public static String decrypt(String key, String initVector, String encrypted) {
-        try {
-            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
 
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
-
-            byte[] original = cipher.doFinal(Base64.decodeBase64(encrypted));
-
-            return new String(original);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        return null;
-    }
 
     private static String byteArray2Hex(final byte[] hash){
 
@@ -276,13 +241,18 @@ public class SendMessageActivity extends AppCompatActivity {
         }
     }
 
-    private void sendSMS(String phoneNumber, String message){
+    private void sendEncryptedSMS(String phoneNumber, String message){
 
         String SENT = "SMS_SENT";
         String DELIVERED = "SMS_DELIVERED";
 
+        Intent intentSent = new Intent(SENT);
+        intentSent.putExtra("DATA_ENCRYPTED", 1);
+        intentSent.putExtra("SHARED_KEY", stringPK);
+        intentSent.putExtra("NONCE",nonce_generated);
+
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
-                new Intent(SENT), 0);
+                intentSent, 0);
 
         PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(DELIVERED), 0);
@@ -334,8 +304,6 @@ public class SendMessageActivity extends AppCompatActivity {
                 }
             }
         }, new IntentFilter(DELIVERED));
-
-
 
         try{
             SmsManager sms = SmsManager.getDefault();
