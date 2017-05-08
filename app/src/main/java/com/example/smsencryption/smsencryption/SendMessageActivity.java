@@ -21,12 +21,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 public class SendMessageActivity extends AppCompatActivity {
@@ -45,12 +49,14 @@ public class SendMessageActivity extends AppCompatActivity {
 
     private boolean isTimerEnabled = false;
 
-    private String nonceText;
-    private byte[] arrNonce;
+    byte[] arrNonce;
     private String stringNonce;
 
     String stringPK;
-    String nonce_generated;
+    String string_nonce;
+
+    private String publicKey;
+    private String nonce;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,21 +81,34 @@ public class SendMessageActivity extends AppCompatActivity {
             public void onClick(View v){
                 //perform the action on click
                 String phoneNumber = txtPhoneNumber.getText().toString();
-                String nonce = txtNonce.getText().toString();
-                String publicKey = txtSharedKey.getText().toString();
+                nonce = txtNonce.getText().toString();
+                publicKey = txtSharedKey.getText().toString();
                 String message = txtMessage.getText().toString();
 
                 if (phoneNumber.length()>0 && nonce.length()>0 && publicKey.length()>0 && message.length()>0){
 
-                    if (nonce.compareTo(nonceText)==0){
+                    if (nonce.compareTo(stringNonce)==0){
                         //if the nonce matches then encrypt the message and send it
-                        short shortPK = Short.parseShort(publicKey);
+                        /*short shortPK = Short.parseShort(publicKey);
                         int intPK = (int) shortPK;
-                        byte[] encodedPK = ByteBuffer.allocate(4).putInt(intPK).array();
-                        stringPK = new String(encodedPK);
-                        nonce_generated = new String(arrNonce);
+                        byte[] encodedPK = ByteBuffer.allocate(16).putInt(intPK).array();
+                        try {
+                            stringPK = new String(encodedPK, "utf-8");
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }*/
 
-                        String encryptedMessage = encrypt(stringPK, nonce_generated, message);
+                        /*short short_nonce = Short.parseShort(stringNonce);
+                        int intNonce = (int) short_nonce;
+
+                        byte[] encodedNonce = ByteBuffer.allocate(16).putInt(intNonce).array();
+                        try {
+                            string_nonce = new String(encodedNonce, "utf-8");
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }*/
+
+                        String encryptedMessage = encrypt(publicKey, nonce, message);
                         sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
                     else{
@@ -150,17 +169,18 @@ public class SendMessageActivity extends AppCompatActivity {
 
                     }.start();
 
-                    arrNonce = generateNonce();
-                    Integer intNonce = java.nio.ByteBuffer.wrap(arrNonce).getInt();
+                    //arrNonce = generateNonce();
+                    /*Integer intNonce = java.nio.ByteBuffer.wrap(arrNonce).getInt();
                     short shortNonce = intNonce.shortValue();
 
                     if(shortNonce<0){
                         shortNonce = (short) (shortNonce * -1);
                     }
                     stringNonce = String.valueOf(shortNonce);
+                    */
+                    //stringNonce = android.util.Base64.encodeToString(arrNonce, android.util.Base64.NO_WRAP);
+                    stringNonce = generateNonce();
                     lblNonce.setText("Nonce generated: "+ stringNonce);
-                    nonceText = Short.toString(shortNonce);
-
                 }
 
             }
@@ -170,37 +190,38 @@ public class SendMessageActivity extends AppCompatActivity {
 
     public static String encrypt(String key, String initVector, String value) {
         try {
-            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes());
+            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
 
             byte[] encrypted = cipher.doFinal(value.getBytes());
-            System.out.println("encrypted string: "
-                    + Base64.encodeBase64String(encrypted));
-
             return Base64.encodeBase64String(encrypted);
+
         } catch (Exception ex) {
             ex.printStackTrace();
-        }
-
-        return null;
-    }
-
-    private byte[] generateNonce(){
-        try{
-            SecureRandom random = new SecureRandom();
-            byte[] values = new byte[20];
-            random.nextBytes(values);
-            return values;
-        }
-        catch(Exception e){
-            //case in which the nonce could not be created
-            Toast.makeText(getBaseContext(), "Could not create nonce",
-                    Toast.LENGTH_SHORT).show();
             return null;
         }
+    }
+
+    private String generateNonce(){
+
+        /*KeyGenerator keyGen = null;
+        try {
+            keyGen = KeyGenerator.getInstance("AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        keyGen.init(128);
+        SecretKey nonceKey = keyGen.generateKey();
+        byte[] arrNonceKey = nonceKey.getEncoded();
+        */
+
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[16];
+        random.nextBytes(bytes);
+        return Base64.encodeBase64String(bytes);
     }
 
     private void sendEncryptedSMS(String phoneNumber, String message){
@@ -210,8 +231,8 @@ public class SendMessageActivity extends AppCompatActivity {
 
         Intent intentSent = new Intent(SENT);
         intentSent.putExtra("DATA_ENCRYPTED", 1);
-        intentSent.putExtra("SHARED_KEY", stringPK);
-        intentSent.putExtra("NONCE",nonce_generated);
+        intentSent.putExtra("SHARED_KEY", publicKey);
+        intentSent.putExtra("NONCE",nonce);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 intentSent, 0);

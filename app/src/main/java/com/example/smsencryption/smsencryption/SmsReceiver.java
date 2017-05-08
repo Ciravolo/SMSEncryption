@@ -51,12 +51,13 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += msgs[i].getMessageBody().toString();
                 str += "\n";
             }
-
-            if ((decryptData!=null)&&(sharedKey!=null)&&(nonce!=null)){
+/*
+            if ((decryptData.compareTo("")!=0)&&(sharedKey.compareTo("")!=0)&&(nonce.compareTo("")!=0)){
              if (decryptData.compareTo("1")==0){
                  str = decrypt(sharedKey,nonce,decryptData);
              }
             }
+            */
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }

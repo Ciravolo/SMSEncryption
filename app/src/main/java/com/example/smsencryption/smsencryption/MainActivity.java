@@ -12,6 +12,7 @@ import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
             keyGen.init(128);
             publicKey = keyGen.generateKey();
             arrPublicKey = publicKey.getEncoded();
-
+            stringPublicKey= Base64.encodeToString(arrPublicKey, android.util.Base64.NO_WRAP);
+/*
             Integer intPKey = java.nio.ByteBuffer.wrap(arrPublicKey).getInt();
             shortPublicKey = intPKey.shortValue();
 
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 shortPublicKey = (short) (shortPublicKey * -1);
             }
             stringPublicKey = String.valueOf(shortPublicKey);
+  */
             lblPKGenerated.setText("Public Key generated: "+stringPublicKey);
         }
         catch(NoSuchAlgorithmException e){
