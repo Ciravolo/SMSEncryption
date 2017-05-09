@@ -42,6 +42,18 @@
         <activity
             android:name=".SendMessageActivity"
             android:label="@string/title_activity_send_message"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".SendNonceActivity"
+            android:label="@string/title_activity_send_nonce"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".FirstStepActivity"
+            android:label="@string/title_activity_first_step"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".SecondStepActivity"
+            android:label="@string/title_activity_second_step"
             android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 

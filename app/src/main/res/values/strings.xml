@@ -4,4 +4,7 @@
     <string name="title_activity_start">StartActivity</string>
     <string name="title_activity_main2">Main2Activity</string>
     <string name="title_activity_send_message">SendMessageActivity</string>
+    <string name="title_activity_send_nonce">SendNonceActivity</string>
+    <string name="title_activity_first_step">FirstStepActivity</string>
+    <string name="title_activity_second_step">SecondStepActivity</string>
 </resources>

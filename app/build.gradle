@@ -15,7 +15,7 @@ android {
                 cppFlags ""
             }
         }
-        jackOptions{
+        jackOptions {
             enabled true
         }
     }
