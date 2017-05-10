@@ -11,7 +11,15 @@ import android.widget.Toast;
 
 import org.apache.commons.codec.binary.Base64;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -21,12 +29,14 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class SmsReceiver extends BroadcastReceiver{
 
+
+    private String privateKeyFromSender="";
+    private String nonceFromSender="";
+
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        String decryptData = intent.getStringExtra("DATA_ENCRYPTED");
-        String sharedKey = intent.getStringExtra("SHARED_KEY");
-        String nonce = intent.getStringExtra("NONCE");
+        String first_step_session_key = intent.getStringExtra("FIRST_STEP_SESSION_KEY");
 
         //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
@@ -51,33 +61,71 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += msgs[i].getMessageBody().toString();
                 str += "\n";
             }
-/*
-            if ((decryptData.compareTo("")!=0)&&(sharedKey.compareTo("")!=0)&&(nonce.compareTo("")!=0)){
-             if (decryptData.compareTo("1")==0){
-                 str = decrypt(sharedKey,nonce,decryptData);
-             }
+
+            if ((first_step_session_key.compareTo("")!=0)) {
+                if (first_step_session_key.compareTo("1") == 0) {
+
+                    try {
+                        privateKeyFromSender = obtainPrivateKeyFromSender(str);
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (BadPaddingException e) {
+                        e.printStackTrace();
+                    } catch (IllegalBlockSizeException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchPaddingException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-            */
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }
     }
 
-    public static String decrypt(String key, String initVector, String encrypted) {
+
+    public String obtainPrivateKeyFromSender(String str)
+            throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
+
         try {
-            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+            byte[] data = str.getBytes("UTF-8");
+            ByteBuffer buffer = ByteBuffer.wrap(data);
 
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+            ByteBuffer nonce = ByteBuffer.wrap(data, 0,16);
+            ByteBuffer dataToDecrypt = ByteBuffer.wrap(data, 16, buffer.array().length);
 
-            byte[] original = cipher.doFinal(Base64.decodeBase64(encrypted));
+            nonceFromSender = new String(nonce.array(), "UTF-8");
+            String stringToDecrypt = new String(dataToDecrypt.array(), "UTF-8");
+            return decryptPrivateKeyFromSender(stringToDecrypt);
 
-            return new String(original);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String decryptPrivateKeyFromSender(String decryptData)
+            throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
+
+        Cipher cipher = Cipher.getInstance("AES");
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, Constants.LONGTERM_SHARED_KEY_SECRET);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
         }
 
-        return null;
+        try{
+            byte[] original = cipher.doFinal(decryptData.getBytes("UTF-8"));
+
+            ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
+            privateKeyFromSender = new String(privateKeyBuffer.array(), "UTF-8");
+            return privateKeyFromSender;
+
+        }catch(UnsupportedEncodingException e){
+            e.printStackTrace();
+            return null;
+        }
+
     }
 }
