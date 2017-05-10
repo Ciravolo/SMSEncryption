@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import org.apache.commons.codec.binary.Base64;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -29,14 +30,14 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class SmsReceiver extends BroadcastReceiver{
 
-
-    private String privateKeyFromSender="";
-    private String nonceFromSender="";
-
+    private String privateKeyA="";
+    private String privateKeyB="";
+    private String nonceFromSenderB="";
     @Override
     public void onReceive(Context context, Intent intent) {
 
         String first_step_session_key = intent.getStringExtra("FIRST_STEP_SESSION_KEY");
+        String second_step_session_key = intent.getStringExtra("SECOND_STEP_SESSION_KEY");
 
         //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
@@ -66,7 +67,13 @@ public class SmsReceiver extends BroadcastReceiver{
                 if (first_step_session_key.compareTo("1") == 0) {
 
                     try {
-                        privateKeyFromSender = obtainPrivateKeyFromSender(str);
+
+                        //TODO Instead of returning a privateKey in the following method it would
+                        // be better to obtain the value from the global variable
+
+                        privateKeyB = obtainPrivateKeyFromSenderFirstStep(str);
+                        Constants.SESSION_KEY_A = encode(Constants.PRIVATE_KEY_A , privateKeyB);
+
                     } catch (NoSuchAlgorithmException e) {
                         e.printStackTrace();
                     } catch (BadPaddingException e) {
@@ -78,13 +85,64 @@ public class SmsReceiver extends BroadcastReceiver{
                     }
                 }
             }
+
+            if ((second_step_session_key.compareTo("")!=0)) {
+                if (second_step_session_key.compareTo("1") == 0) {
+
+                    try {
+                         //TODO Instead of returning a privateKey in the following method it would
+                        // be better to obtain the value from the global variable
+
+                        privateKeyA = obtainPrivateKeyFromSenderSecondStep(str);
+                        Constants.SESSION_KEY_B = encode(privateKeyA , Constants.PRIVATE_KEY_B);
+
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (BadPaddingException e) {
+                        e.printStackTrace();
+                    } catch (IllegalBlockSizeException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchPaddingException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }
     }
 
 
-    public String obtainPrivateKeyFromSender(String str)
+
+    private byte[] xorWithKey(byte[] a, byte[] key) {
+        byte[] out = new byte[a.length];
+        for (int i = 0; i < a.length; i++) {
+            out[i] = (byte) (a[i] ^ key[i%key.length]);
+        }
+        return out;
+    }
+
+    public String encode(String s, String key) {
+        return base64Encode(xorWithKey(s.getBytes(), key.getBytes()));
+    }
+
+    public String decode(String s, String key) {
+        return new String(xorWithKey(base64Decode(s), key.getBytes()));
+    }
+
+    private byte[] base64Decode(String s) {
+        return Base64.decodeBase64(s);
+    }
+
+    private String base64Encode(byte[] bytes) {
+        return Base64.encodeBase64String(bytes).replaceAll("\\s", "");
+
+    }
+
+
+
+    public String obtainPrivateKeyFromSenderFirstStep(String str)
             throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
 
         try {
@@ -94,9 +152,9 @@ public class SmsReceiver extends BroadcastReceiver{
             ByteBuffer nonce = ByteBuffer.wrap(data, 0,16);
             ByteBuffer dataToDecrypt = ByteBuffer.wrap(data, 16, buffer.array().length);
 
-            nonceFromSender = new String(nonce.array(), "UTF-8");
+            nonceFromSenderB = new String(nonce.array(), "UTF-8");
             String stringToDecrypt = new String(dataToDecrypt.array(), "UTF-8");
-            return decryptPrivateKeyFromSender(stringToDecrypt);
+            return decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
 
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -104,7 +162,33 @@ public class SmsReceiver extends BroadcastReceiver{
         }
     }
 
-    public String decryptPrivateKeyFromSender(String decryptData)
+
+    public String obtainPrivateKeyFromSenderSecondStep(String str)
+            throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
+
+        Cipher cipher = Cipher.getInstance("AES");
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, Constants.LONGTERM_SHARED_KEY_SECRET);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        try{
+            byte[] original = cipher.doFinal(str.getBytes("UTF-8"));
+
+            ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
+            privateKeyA = new String(privateKeyBuffer.array(), "UTF-8");
+            return privateKeyA;
+
+        }catch(UnsupportedEncodingException e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    public String decryptPrivateKeyFromSenderFirstStep(String decryptData)
             throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
 
         Cipher cipher = Cipher.getInstance("AES");
@@ -119,8 +203,8 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] original = cipher.doFinal(decryptData.getBytes("UTF-8"));
 
             ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
-            privateKeyFromSender = new String(privateKeyBuffer.array(), "UTF-8");
-            return privateKeyFromSender;
+            privateKeyB = new String(privateKeyBuffer.array(), "UTF-8");
+            return privateKeyB;
 
         }catch(UnsupportedEncodingException e){
             e.printStackTrace();

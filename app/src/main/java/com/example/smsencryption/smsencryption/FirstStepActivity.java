@@ -52,8 +52,6 @@ public class FirstStepActivity extends AppCompatActivity {
     private String stringNonce;
     private String nonce;
 
-    private final String PRIVATE_KEY_B = "5678567856785678";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,7 +80,8 @@ public class FirstStepActivity extends AppCompatActivity {
                 if (phoneNumber.length()>0 && nonce.length()>0 && nonceReceived.length()>0){
 
                     if (nonce.compareTo(stringNonce)==0){
-                        String encryptedMessage = generateEncryptedData(nonceReceived,nonce);
+                        Constants.PIN_A = nonce;
+                        String encryptedMessage = generateEncryptedData(nonceReceived);
                         sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
                     else{
@@ -149,11 +148,11 @@ public class FirstStepActivity extends AppCompatActivity {
     }
 
 
-    public String generateEncryptedData(String nonceReceived, String myNonce) {
+    public String generateEncryptedData(String nonceReceived) {
 
         try{
 
-            byte[] stringToEncrypt = (PRIVATE_KEY_B + nonceReceived + myNonce).getBytes("UTF-8");
+            byte[] stringToEncrypt = (Constants.PRIVATE_KEY_B + nonceReceived + Constants.PIN_A).getBytes("UTF-8");
             byte[] longTermSharedKeyString = (Constants.LONGTERM_SHARED_KEY).getBytes("UTF-8");
 
             try{
@@ -169,10 +168,10 @@ public class FirstStepActivity extends AppCompatActivity {
 
                 byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                String strEncrypted = Base64.encodeBase64String(encrypted);
-
-                //append nb = myPrivateKey
-                String finalString = PRIVATE_KEY_B + strEncrypted;
+                //String strEncrypted = Base64.encodeBase64String(encrypted);
+                String strEncrypted = new String(encrypted, "UTF-8");
+                //append nb = myNonce
+                String finalString = Constants.PIN_A + strEncrypted;
                 return finalString;
             }
             catch(NoSuchAlgorithmException e){

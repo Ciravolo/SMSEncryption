@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,4 +8,32 @@
     tools:context="com.example.smsencryption.smsencryption.SecondStepActivity"
     tools:showIn="@layout/activity_second_step">
 
-</android.support.constraint.ConstraintLayout>
+    <TextView
+        android:id="@+id/lblPhoneNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enter the phone number of the recipient"
+        android:textColor="@color/black"
+        android:layout_marginBottom="@dimen/margin_text_bottom"
+        android:layout_marginTop="40dp"
+        />
+
+    <EditText
+        android:id="@+id/txtPhoneNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:layout_marginTop="55dp"
+        />
+
+    <Button
+        android:id="@+id/btnSend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:text="Confirm Protocol"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txtPhoneNumber"/>
+
+</RelativeLayout>
