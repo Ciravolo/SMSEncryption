@@ -39,11 +39,8 @@ public class FirstStepActivity extends AppCompatActivity {
 
     Button btnSend;
     Button btnGetNonce;
-
     TextView lblTime;
     TextView lblNonce;
-    TextView lblPKGenerated;
-
     EditText txtNonce;
     EditText txtPhoneNumber;
     EditText txtNonceReceived;
@@ -65,10 +62,8 @@ public class FirstStepActivity extends AppCompatActivity {
 
         lblTime = (TextView) findViewById(R.id.lblTime);
         lblNonce = (TextView) findViewById(R.id.lblNonce);
-        lblPKGenerated = (TextView) findViewById(R.id.lblPKGenerated);
 
         btnSend = (Button) findViewById(R.id.btnSend);
-
         btnSend.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){

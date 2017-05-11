@@ -30,8 +30,8 @@ public class StartActivity extends AppCompatActivity {
 
             public void onClick(View v){
                 //start the protocol with user 1
-                Intent intentProtocol = new Intent(StartActivity.this, SendNonceActivity.class);
-                startActivity(intentProtocol);
+                Intent intentStart = new Intent(StartActivity.this, SendNonceActivity.class);
+                startActivity(intentStart);
             }
         });
 
@@ -39,8 +39,8 @@ public class StartActivity extends AppCompatActivity {
 
             public void onClick(View v){
                 //start the protocol from user 2, the one who receives the key
-                Intent intentKey = new Intent(StartActivity.this, FirstStepActivity.class);
-                startActivity(intentKey);
+                Intent intentFirstStep = new Intent(StartActivity.this, FirstStepActivity.class);
+                startActivity(intentFirstStep);
             }
 
         });
@@ -49,8 +49,8 @@ public class StartActivity extends AppCompatActivity {
 
             public void onClick(View v){
                 //start sending the message here
-                Intent intentSendMessage = new Intent(StartActivity.this, SecondStepActivity.class);
-                startActivity(intentSendMessage);
+                Intent intentSecondStep = new Intent(StartActivity.this, SecondStepActivity.class);
+                startActivity(intentSecondStep);
             }
 
         });

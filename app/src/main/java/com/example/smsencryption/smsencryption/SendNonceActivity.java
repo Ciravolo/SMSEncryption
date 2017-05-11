@@ -35,12 +35,12 @@ public class SendNonceActivity extends AppCompatActivity {
 
     private String nonce;
     private String stringNonce;
-    private Boolean isTimerEnabled;
+    private Boolean isTimerEnabled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_send_message);
+        setContentView(R.layout.activity_send_nonce);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
