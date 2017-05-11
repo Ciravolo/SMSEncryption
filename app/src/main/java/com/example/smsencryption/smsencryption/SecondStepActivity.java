@@ -8,8 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -133,7 +131,7 @@ public class SecondStepActivity extends AppCompatActivity {
         String DELIVERED = "SMS_DELIVERED";
 
         Intent intentSent = new Intent(SENT);
-        intentSent.putExtra("SECOND_STEP_SESSION_KEY", 1);
+        intentSent.putExtra("SECOND_STEP_SESSION_KEY", "1");
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 intentSent, 0);

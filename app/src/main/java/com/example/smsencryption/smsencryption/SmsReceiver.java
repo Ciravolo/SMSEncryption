@@ -153,6 +153,7 @@ public class SmsReceiver extends BroadcastReceiver{
             ByteBuffer dataToDecrypt = ByteBuffer.wrap(data, 16, buffer.array().length);
 
             nonceFromSenderB = new String(nonce.array(), "UTF-8");
+            Constants.PIN_B = nonceFromSenderB;
             String stringToDecrypt = new String(dataToDecrypt.array(), "UTF-8");
             return decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
 

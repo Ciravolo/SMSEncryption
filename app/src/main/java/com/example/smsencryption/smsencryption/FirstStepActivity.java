@@ -212,7 +212,7 @@ public class FirstStepActivity extends AppCompatActivity {
         String DELIVERED = "SMS_DELIVERED";
 
         Intent intentSent = new Intent(SENT);
-        intentSent.putExtra("FIRST_STEP_SESSION_KEY", 1);
+        intentSent.putExtra("FIRST_STEP_SESSION_KEY", "1");
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 intentSent, 0);

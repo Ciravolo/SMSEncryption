@@ -20,43 +20,27 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 public class SendMessageActivity extends AppCompatActivity {
 
-    Button btnStart;
-    Button btnGetNonce;
-
-    TextView lblTime;
-    TextView lblNonce;
-    TextView lblPKGenerated;
-
-    EditText txtNonce;
+    Button btnSend;
     EditText txtPhoneNumber;
-    EditText txtSharedKey;
     EditText txtMessage;
-
-    private boolean isTimerEnabled = false;
-
-    byte[] arrNonce;
-    private String stringNonce;
-
-    String stringPK;
-    String string_nonce;
-
-    private String publicKey;
-    private String nonce;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,56 +50,28 @@ public class SendMessageActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
-        txtNonce = (EditText) findViewById(R.id.txtNonce);
-        txtSharedKey = (EditText) findViewById(R.id.txtSharedKey);
         txtMessage = (EditText) findViewById(R.id.txtMessage);
+        btnSend = (Button) findViewById(R.id.btnStart);
 
-        lblTime = (TextView) findViewById(R.id.lblTime);
-        lblNonce = (TextView) findViewById(R.id.lblNonce);
-        lblPKGenerated = (TextView) findViewById(R.id.lblPKGenerated);
-
-        btnStart = (Button) findViewById(R.id.btnStart);
-
-        btnStart.setOnClickListener(new View.OnClickListener(){
+        btnSend.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
                 //perform the action on click
                 String phoneNumber = txtPhoneNumber.getText().toString();
-                nonce = txtNonce.getText().toString();
-                publicKey = txtSharedKey.getText().toString();
                 String message = txtMessage.getText().toString();
 
-                if (phoneNumber.length()>0 && nonce.length()>0 && publicKey.length()>0 && message.length()>0){
+                if (phoneNumber.length()>0 && message.length()>0){
 
-                    if (nonce.compareTo(stringNonce)==0){
-                        //if the nonce matches then encrypt the message and send it
-                        /*short shortPK = Short.parseShort(publicKey);
-                        int intPK = (int) shortPK;
-                        byte[] encodedPK = ByteBuffer.allocate(16).putInt(intPK).array();
-                        try {
-                            stringPK = new String(encodedPK, "utf-8");
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }*/
+                    if ((Constants.SESSION_KEY_A.compareTo("")!=0)||(Constants.SESSION_KEY_B.compareTo("")!=0)) {
 
-                        /*short short_nonce = Short.parseShort(stringNonce);
-                        int intNonce = (int) short_nonce;
-
-                        byte[] encodedNonce = ByteBuffer.allocate(16).putInt(intNonce).array();
-                        try {
-                            string_nonce = new String(encodedNonce, "utf-8");
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }*/
-
-                        String encryptedMessage = encrypt(publicKey, nonce, message);
+                        String sessionKeyForEncryption = (Constants.SESSION_KEY_A.compareTo("")==0)?Constants.SESSION_KEY_B:Constants.SESSION_KEY_A;
+                        String encryptedMessage = encryptWithSessionKey(sessionKeyForEncryption, message);
                         sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
                     else{
-                        //insert the appropriate nonce in the textfield
                         new AlertDialog.Builder(SendMessageActivity.this)
                                 .setTitle("Alert")
-                                .setMessage("Please insert the correspondent nonce generated as it is shown in the screen.")
+                                .setMessage("A session key could not be established, please start the protocol.")
                                 .setCancelable(false)
                                 .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                                     @Override
@@ -127,10 +83,9 @@ public class SendMessageActivity extends AppCompatActivity {
                     }
 
                 } else{
-
                     new AlertDialog.Builder(SendMessageActivity.this)
                             .setTitle("Alert")
-                            .setMessage("Please fill all the fields before starting the protocol.")
+                            .setMessage("Please fill all the fields before sending the message.")
                             .setCancelable(false)
                             .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                                 @Override
@@ -140,89 +95,56 @@ public class SendMessageActivity extends AppCompatActivity {
                                 }
                             }).show();
                 }
-
             }
-
         });
+    }
 
-        // button to obtain a new nonce
-        btnGetNonce = (Button) findViewById(R.id.btnGetNonce);
-        btnGetNonce.setOnClickListener(new View.OnClickListener(){
 
-            //start the timer for the nonce
-            public void onClick(View v){
+    public String encryptWithSessionKey(String sessionKey, String message) {
 
-                if (!isTimerEnabled){
+            try{
+                byte[] stringToEncrypt = message.getBytes("UTF-8");
+                byte[] sessionKeyBytes = (sessionKey).getBytes("UTF-8");
 
-                    new CountDownTimer(30000, 1000) {
+                try{
+                    MessageDigest sha = MessageDigest.getInstance("SHA-1");
+                    sessionKeyBytes = sha.digest(sessionKeyBytes);
+                    sessionKeyBytes = Arrays.copyOf(sessionKeyBytes, 16); // use only first 128 bit
 
-                        public void onTick(long millisUntilFinished) {
-                            isTimerEnabled = true;
-                            lblTime.setText("Time: " + millisUntilFinished / 1000);
-                            //here you can have your logic to set text to edittext
-                        }
+                    SecretKeySpec secretKeySpec = new SecretKeySpec(sessionKeyBytes, "AES");
 
-                        public void onFinish() {
-                            lblTime.setText("Nonce has expired");
-                            isTimerEnabled = false;
-                        }
+                    Cipher cipher = Cipher.getInstance("AES");
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 
-                    }.start();
+                    byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                    //arrNonce = generateNonce();
-                    /*Integer intNonce = java.nio.ByteBuffer.wrap(arrNonce).getInt();
-                    short shortNonce = intNonce.shortValue();
-
-                    if(shortNonce<0){
-                        shortNonce = (short) (shortNonce * -1);
-                    }
-                    stringNonce = String.valueOf(shortNonce);
-                    */
-                    //stringNonce = android.util.Base64.encodeToString(arrNonce, android.util.Base64.NO_WRAP);
-                    stringNonce = generateNonce();
-                    lblNonce.setText("Nonce generated: "+ stringNonce);
+                    String strEncrypted = new String(encrypted, "UTF-8");
+                    return strEncrypted;
+                }
+                catch(NoSuchAlgorithmException e){
+                    e.printStackTrace();
+                    return null;
+                } catch (BadPaddingException e) {
+                    e.printStackTrace();
+                    return null;
+                } catch (IllegalBlockSizeException e) {
+                    e.printStackTrace();
+                    return null;
+                } catch (NoSuchPaddingException e) {
+                    e.printStackTrace();
+                    return null;
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                    return null;
                 }
 
             }
-        });
-    }
+            catch(UnsupportedEncodingException e){
+                e.printStackTrace();
+                return null;
+            }
 
-
-    public static String encrypt(String key, String initVector, String value) {
-        try {
-            IvParameterSpec iv = new IvParameterSpec(initVector.getBytes());
-            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
-
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
-
-            byte[] encrypted = cipher.doFinal(value.getBytes());
-            return Base64.encodeBase64String(encrypted);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
         }
-    }
-
-    private String generateNonce(){
-
-        /*KeyGenerator keyGen = null;
-        try {
-            keyGen = KeyGenerator.getInstance("AES");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        keyGen.init(128);
-        SecretKey nonceKey = keyGen.generateKey();
-        byte[] arrNonceKey = nonceKey.getEncoded();
-        */
-
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[16];
-        random.nextBytes(bytes);
-        return Base64.encodeBase64String(bytes);
-    }
 
     private void sendEncryptedSMS(String phoneNumber, String message){
 
@@ -230,9 +152,7 @@ public class SendMessageActivity extends AppCompatActivity {
         String DELIVERED = "SMS_DELIVERED";
 
         Intent intentSent = new Intent(SENT);
-        intentSent.putExtra("DATA_ENCRYPTED", 1);
-        intentSent.putExtra("SHARED_KEY", publicKey);
-        intentSent.putExtra("NONCE",nonce);
+        intentSent.putExtra("message_sent", "1");
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 intentSent, 0);
