@@ -23,6 +23,9 @@ import android.widget.Toast;
 import org.apache.commons.codec.binary.Base64;
 import java.security.SecureRandom;
 
+/**
+ * Class to send the nonce initial seed to the user
+ */
 public class SendNonceActivity extends AppCompatActivity {
 
     EditText txtPhoneNumber;
@@ -129,7 +132,9 @@ public class SendNonceActivity extends AppCompatActivity {
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
-        return Base64.encodeBase64String(bytes);
+        //return Base64.encodeBase64String(bytes);
+        String nonceGenerated = new String(Base64.encodeBase64(bytes));
+        return  nonceGenerated.replace('+','-').replace('/','_');
     }
 
     private void sendNonce(String phoneNumber, String nonce){

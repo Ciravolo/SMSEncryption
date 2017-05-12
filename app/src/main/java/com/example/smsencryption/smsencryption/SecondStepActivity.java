@@ -29,6 +29,10 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+
+/**
+ * Reply from user to obtain the session key
+ */
 public class SecondStepActivity extends AppCompatActivity {
 
     EditText txtPhoneNumber;

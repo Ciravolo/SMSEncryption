@@ -35,6 +35,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+/**
+ *  Class related to the first step of encryption: reply to user after having received the nonce
+ */
 public class FirstStepActivity extends AppCompatActivity {
 
     Button btnSendFirstStep;

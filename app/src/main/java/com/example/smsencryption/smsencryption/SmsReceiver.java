@@ -20,6 +20,8 @@ import javax.crypto.NoSuchPaddingException;
 
 /**
  * Created by joana on 4/16/17.
+ *
+ * Class called on every receive of a message
  */
 
 public class SmsReceiver extends BroadcastReceiver{
