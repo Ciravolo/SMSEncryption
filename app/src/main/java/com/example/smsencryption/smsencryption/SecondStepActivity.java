@@ -32,7 +32,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class SecondStepActivity extends AppCompatActivity {
 
     EditText txtPhoneNumber;
-    Button btnSend;
+    Button btnSendSecondStep;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +42,9 @@ public class SecondStepActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
-        btnSend = (Button) findViewById(R.id.btnSend);
+        btnSendSecondStep = (Button) findViewById(R.id.btnSendSecondStep);
 
-        btnSend.setOnClickListener(new View.OnClickListener(){
+        btnSendSecondStep.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
 

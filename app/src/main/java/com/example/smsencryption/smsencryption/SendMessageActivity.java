@@ -31,7 +31,7 @@ import java.util.Arrays;
 
 public class SendMessageActivity extends AppCompatActivity {
 
-    Button btnSend;
+    Button btnSendMessage;
     EditText txtPhoneNumber;
     EditText txtMessage;
 
@@ -44,9 +44,9 @@ public class SendMessageActivity extends AppCompatActivity {
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtMessage = (EditText) findViewById(R.id.txtMessage);
-        btnSend = (Button) findViewById(R.id.btnStart);
+        btnSendMessage = (Button) findViewById(R.id.btnSendMessage);
 
-        btnSend.setOnClickListener(new View.OnClickListener(){
+        btnSendMessage.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
                 //perform the action on click

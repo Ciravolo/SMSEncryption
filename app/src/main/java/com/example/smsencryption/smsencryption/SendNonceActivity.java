@@ -28,14 +28,14 @@ public class SendNonceActivity extends AppCompatActivity {
     EditText txtPhoneNumber;
     EditText txtNonce;
 
-    Button btnGetNonce;
-    Button btnStart;
+    Button btnGetNonceStart;
+    Button btnSendNonceStart;
     TextView lblTime;
     TextView lblNonce;
 
     private String nonce;
-    private String stringNonce;
-    private Boolean isTimerEnabled = false;
+    private String nonceGeneratedString = "";
+    private boolean enabled = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +48,10 @@ public class SendNonceActivity extends AppCompatActivity {
         txtNonce = (EditText) findViewById(R.id.txtNonce);
         lblTime = (TextView) findViewById(R.id.lblTime);
         lblNonce = (TextView) findViewById(R.id.lblNonce);
-        btnStart = (Button) findViewById(R.id.btnStart);
+        btnSendNonceStart = (Button) findViewById(R.id.btnSendNonceStart);
+        btnGetNonceStart = (Button) findViewById(R.id.btnGetNonceStart);
 
-        btnStart.setOnClickListener(new View.OnClickListener(){
+        btnSendNonceStart.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
                 //perform the action on click
@@ -59,7 +60,7 @@ public class SendNonceActivity extends AppCompatActivity {
 
                 if (phoneNumber.length()>0 && nonce.length()>0){
 
-                    if (nonce.compareTo(stringNonce)==0){
+                    if (nonce.compareTo(nonceGeneratedString)==0){
                         sendNonce(phoneNumber, nonce);
                     }
                     else{
@@ -96,29 +97,28 @@ public class SendNonceActivity extends AppCompatActivity {
 
         });
 
-        btnGetNonce = (Button) findViewById(R.id.btnGetNonce);
-        btnGetNonce.setOnClickListener(new View.OnClickListener(){
+
+        btnGetNonceStart.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
 
-                if (!isTimerEnabled){
+                if (!enabled){
 
                     new CountDownTimer(30000, 1000) {
 
                         public void onTick(long millisUntilFinished) {
-                            isTimerEnabled = true;
+                            enabled = true;
                             lblTime.setText("Time: " + millisUntilFinished / 1000);
-                            //here you can have your logic to set text to edittext
                         }
 
                         public void onFinish() {
                             lblTime.setText("Nonce has expired");
-                            isTimerEnabled = false;
+                            enabled = false;
                         }
 
                     }.start();
-                    stringNonce = generateNonce();
-                    lblNonce.setText("Nonce generated: "+ stringNonce);
+                    nonceGeneratedString = generateNonce();
+                    lblNonce.setText("Nonce generated: "+ nonceGeneratedString);
                 }
 
             }
@@ -126,7 +126,6 @@ public class SendNonceActivity extends AppCompatActivity {
     }
 
     private String generateNonce(){
-
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);

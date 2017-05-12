@@ -37,7 +37,7 @@ import java.util.Arrays;
 
 public class FirstStepActivity extends AppCompatActivity {
 
-    Button btnSend;
+    Button btnSendFirstStep;
     Button btnGetNonce;
     TextView lblTime;
     TextView lblNonce;
@@ -63,8 +63,8 @@ public class FirstStepActivity extends AppCompatActivity {
         lblTime = (TextView) findViewById(R.id.lblTime);
         lblNonce = (TextView) findViewById(R.id.lblNonce);
 
-        btnSend = (Button) findViewById(R.id.btnSend);
-        btnSend.setOnClickListener(new View.OnClickListener(){
+        btnSendFirstStep = (Button) findViewById(R.id.btnSendFirstStep);
+        btnSendFirstStep.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
 
