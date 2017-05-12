@@ -45,7 +45,7 @@
         android:inputType="textPersonName" />
 
     <Button
-        android:id="@+id/btnGetNonce"
+        android:id="@+id/btnGetNonceFirstStep"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/margin_text_bottom"

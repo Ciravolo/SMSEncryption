@@ -41,7 +41,7 @@ import java.util.Arrays;
 public class FirstStepActivity extends AppCompatActivity {
 
     Button btnSendFirstStep;
-    Button btnGetNonce;
+    Button btnGetNonceFirstStep;
     TextView lblTime;
     TextView lblNonce;
     EditText txtNonce;
@@ -67,6 +67,8 @@ public class FirstStepActivity extends AppCompatActivity {
         lblNonce = (TextView) findViewById(R.id.lblNonce);
 
         btnSendFirstStep = (Button) findViewById(R.id.btnSendFirstStep);
+        btnGetNonceFirstStep = (Button) findViewById(R.id.btnGetNonceFirstStep);
+
         btnSendFirstStep.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
@@ -116,8 +118,7 @@ public class FirstStepActivity extends AppCompatActivity {
 
         });
 
-        btnGetNonce = (Button) findViewById(R.id.btnGetNonce);
-        btnGetNonce.setOnClickListener(new View.OnClickListener(){
+        btnGetNonceFirstStep.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
 
@@ -166,8 +167,11 @@ public class FirstStepActivity extends AppCompatActivity {
 
                 byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                //String strEncrypted = Base64.encodeBase64String(encrypted);
-                String strEncrypted = new String(encrypted, "UTF-8");
+                //String strEncrypted = new String(encrypted, "ISO-8859-15");
+
+                String strEncrypted = new String(Base64.encodeBase64(encrypted));
+                strEncrypted.replace('+','-').replace('/','_');
+
                 //append nb = myNonce
                 String finalString = Constants.PIN_A + strEncrypted;
                 return finalString;
@@ -201,7 +205,8 @@ public class FirstStepActivity extends AppCompatActivity {
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
-        return Base64.encodeBase64String(bytes);
+        String nonceGenerated = new String(Base64.encodeBase64(bytes));
+        return  nonceGenerated.replace('+','-').replace('/','_');
     }
 
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){

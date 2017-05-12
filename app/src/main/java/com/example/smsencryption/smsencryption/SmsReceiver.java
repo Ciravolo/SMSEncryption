@@ -59,7 +59,7 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += "\n";
             }
 
-            if ((first_step_session_key.compareTo("")!=0)) {
+            if (first_step_session_key!=null) {
                 if (first_step_session_key.compareTo("1") == 0) {
 
                     try {
@@ -82,7 +82,7 @@ public class SmsReceiver extends BroadcastReceiver{
                 }
             }
 
-            if ((second_step_session_key.compareTo("")!=0)) {
+            if (second_step_session_key != null) {
                 if (second_step_session_key.compareTo("1") == 0) {
 
                     try {

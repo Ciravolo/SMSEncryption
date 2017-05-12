@@ -132,7 +132,6 @@ public class SendNonceActivity extends AppCompatActivity {
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[16];
         random.nextBytes(bytes);
-        //return Base64.encodeBase64String(bytes);
         String nonceGenerated = new String(Base64.encodeBase64(bytes));
         return  nonceGenerated.replace('+','-').replace('/','_');
     }
@@ -143,7 +142,6 @@ public class SendNonceActivity extends AppCompatActivity {
         String DELIVERED = "SMS_DELIVERED";
 
         Intent intentSent = new Intent(SENT);
-        intentSent.putExtra("DATA_ENCRYPTED", 0);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 intentSent, 0);
