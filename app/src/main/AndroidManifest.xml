@@ -15,11 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <receiver android:name=".SmsReceiver">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
+
 
         <activity
             android:name=".StartActivity"
@@ -46,6 +42,14 @@
             android:name=".SecondStepActivity"
             android:label="@string/title_activity_second_step"
             android:theme="@style/AppTheme.NoActionBar"></activity>
+
+        <receiver android:name=".SmsReceiver" android:enabled="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <action android:name="my.action.string" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

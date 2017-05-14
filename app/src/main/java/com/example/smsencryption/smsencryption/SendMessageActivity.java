@@ -15,9 +15,13 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import org.apache.commons.codec.binary.Base64;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -38,6 +42,7 @@ public class SendMessageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         setContentView(R.layout.activity_send_message);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -55,9 +60,12 @@ public class SendMessageActivity extends AppCompatActivity {
 
                 if (phoneNumber.length()>0 && message.length()>0){
 
-                    if ((Constants.SESSION_KEY_A.compareTo("")!=0)||(Constants.SESSION_KEY_B.compareTo("")!=0)) {
+                    String sa = Constants.getSessionKeyA();
+                    String sb = Constants.getSessionKeyB();
 
-                        String sessionKeyForEncryption = (Constants.SESSION_KEY_A.compareTo("")==0)?Constants.SESSION_KEY_B:Constants.SESSION_KEY_A;
+                    if ((sa.compareTo("")!=0)||(sb.compareTo("")!=0)) {
+
+                        String sessionKeyForEncryption = (Constants.getSessionKeyA().compareTo("")==0)?Constants.getSessionKeyB():Constants.getSessionKeyA();
                         String encryptedMessage = encryptWithSessionKey(sessionKeyForEncryption, message);
                         sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
@@ -111,7 +119,8 @@ public class SendMessageActivity extends AppCompatActivity {
 
                     byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                    String strEncrypted = new String(encrypted, "UTF-8");
+                    String strEncrypted = new String(Base64.encodeBase64(encrypted));
+                    strEncrypted.replace('+','-').replace('/','_');
                     return strEncrypted;
                 }
                 catch(NoSuchAlgorithmException e){

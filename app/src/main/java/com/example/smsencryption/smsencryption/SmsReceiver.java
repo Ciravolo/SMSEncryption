@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.util.Log;
 import android.widget.Toast;
 import org.apache.commons.codec.binary.Base64;
 import java.io.UnsupportedEncodingException;
@@ -32,8 +33,15 @@ public class SmsReceiver extends BroadcastReceiver{
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        String first_step_session_key = intent.getStringExtra("FIRST_STEP_SESSION_KEY");
-        String second_step_session_key = intent.getStringExtra("SECOND_STEP_SESSION_KEY");
+        //String first_step_session_key = intent.getStringExtra("FIRST_STEP_SESSION_KEY");
+        //String second_step_session_key = intent.getStringExtra("SECOND_STEP_SESSION_KEY");
+
+        String action = intent.getAction();
+        Log.i("Receiver", "Broadcast received: " + action);
+
+        if(action.equals("my.action.string")){
+            String step = intent.getExtras().getString("step_number");
+        }
 
         //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
@@ -42,6 +50,9 @@ public class SmsReceiver extends BroadcastReceiver{
         if (bundle != null) {
             //---retrieve the SMS message received---
             Object[] pdus = (Object[]) bundle.get("pdus");
+
+           // boolean firstStep =(boolean) bundle.get("FIRST_STEP_SESSION_KEY");
+
             msgs = new SmsMessage[pdus.length];
             for (int i = 0; i < msgs.length; i++) {
 
@@ -59,16 +70,16 @@ public class SmsReceiver extends BroadcastReceiver{
                 str += "\n";
             }
 
-            if (first_step_session_key!=null) {
-                if (first_step_session_key.compareTo("1") == 0) {
-
+//            if (first_step_session_key!=null) {
+//                if (first_step_session_key.compareTo("1") == 0) {
+/*
                     try {
 
                         //TODO Instead of returning a privateKey in the following method it would
                         // be better to obtain the value from the global variable
 
                         privateKeyB = obtainPrivateKeyFromSenderFirstStep(str);
-                        Constants.SESSION_KEY_A = encode(Constants.PRIVATE_KEY_A , privateKeyB);
+                        Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
 
                     } catch (NoSuchAlgorithmException e) {
                         e.printStackTrace();
@@ -79,18 +90,18 @@ public class SmsReceiver extends BroadcastReceiver{
                     } catch (NoSuchPaddingException e) {
                         e.printStackTrace();
                     }
-                }
-            }
+  //              }
+  //          }
 
-            if (second_step_session_key != null) {
-                if (second_step_session_key.compareTo("1") == 0) {
+  //          if (second_step_session_key != null) {
+  //              if (second_step_session_key.compareTo("1") == 0) {
 
                     try {
                          //TODO Instead of returning a privateKey in the following method it would
                         // be better to obtain the value from the global variable
 
                         privateKeyA = obtainPrivateKeyFromSenderSecondStep(str);
-                        Constants.SESSION_KEY_B = encode(privateKeyA , Constants.PRIVATE_KEY_B);
+                        Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
 
                     } catch (NoSuchAlgorithmException e) {
                         e.printStackTrace();
@@ -100,9 +111,9 @@ public class SmsReceiver extends BroadcastReceiver{
                         e.printStackTrace();
                     } catch (NoSuchPaddingException e) {
                         e.printStackTrace();
-                    }
-                }
-            }
+                    }*/
+   //             }
+    //        }
 
             //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
@@ -148,9 +159,14 @@ public class SmsReceiver extends BroadcastReceiver{
             ByteBuffer nonce = ByteBuffer.wrap(data, 0,16);
             ByteBuffer dataToDecrypt = ByteBuffer.wrap(data, 16, buffer.array().length);
 
-            nonceFromSenderB = new String(nonce.array(), "UTF-8");
-            Constants.PIN_B = nonceFromSenderB;
-            String stringToDecrypt = new String(dataToDecrypt.array(), "UTF-8");
+            nonceFromSenderB = new String(Base64.encodeBase64(nonce.array()));
+            nonceFromSenderB.replace('+','-').replace('/','_');
+
+            Constants.setPinB(nonceFromSenderB);
+
+            String stringToDecrypt = new String(Base64.encodeBase64(dataToDecrypt.array()));
+            stringToDecrypt.replace('+','-').replace('/','_');
+
             return decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
 
         } catch (UnsupportedEncodingException e) {
@@ -165,7 +181,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
         Cipher cipher = Cipher.getInstance("AES");
         try {
-            cipher.init(Cipher.DECRYPT_MODE, Constants.LONGTERM_SHARED_KEY_SECRET);
+            cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
         } catch (InvalidKeyException e) {
             e.printStackTrace();
             return null;
@@ -175,7 +191,9 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] original = cipher.doFinal(str.getBytes("UTF-8"));
 
             ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
-            privateKeyA = new String(privateKeyBuffer.array(), "UTF-8");
+
+            privateKeyA = new String(Base64.encodeBase64(privateKeyBuffer.array()));
+            privateKeyA.replace('+','-').replace('/','_');
             return privateKeyA;
 
         }catch(UnsupportedEncodingException e){
@@ -190,7 +208,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
         Cipher cipher = Cipher.getInstance("AES");
         try {
-            cipher.init(Cipher.DECRYPT_MODE, Constants.LONGTERM_SHARED_KEY_SECRET);
+            cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
         } catch (InvalidKeyException e) {
             e.printStackTrace();
             return null;
@@ -200,7 +218,9 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] original = cipher.doFinal(decryptData.getBytes("UTF-8"));
 
             ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
-            privateKeyB = new String(privateKeyBuffer.array(), "UTF-8");
+
+            privateKeyB = new String(Base64.encodeBase64(privateKeyBuffer.array()));
+            privateKeyB.replace('+','-').replace('/','_');
             return privateKeyB;
 
         }catch(UnsupportedEncodingException e){

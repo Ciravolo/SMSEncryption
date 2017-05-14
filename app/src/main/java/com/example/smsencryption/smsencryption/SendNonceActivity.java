@@ -16,6 +16,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -43,6 +44,7 @@ public class SendNonceActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         setContentView(R.layout.activity_send_nonce);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -64,6 +66,7 @@ public class SendNonceActivity extends AppCompatActivity {
                 if (phoneNumber.length()>0 && nonce.length()>0){
 
                     if (nonce.compareTo(nonceGeneratedString)==0){
+                        Constants.setPinA(nonce);
                         sendNonce(phoneNumber, nonce);
                     }
                     else{

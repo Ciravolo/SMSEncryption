@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.telephony.SmsManager;
@@ -16,6 +17,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -55,6 +57,7 @@ public class FirstStepActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         setContentView(R.layout.activity_first_step);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -80,7 +83,7 @@ public class FirstStepActivity extends AppCompatActivity {
                 if (phoneNumber.length()>0 && nonce.length()>0 && nonceReceived.length()>0){
 
                     if (nonce.compareTo(stringNonce)==0){
-                        Constants.PIN_A = nonce;
+                        Constants.setPinB(nonce);
                         String encryptedMessage = generateEncryptedData(nonceReceived);
                         sendEncryptedSMS(phoneNumber, encryptedMessage);
                     }
@@ -151,29 +154,35 @@ public class FirstStepActivity extends AppCompatActivity {
 
         try{
 
-            byte[] stringToEncrypt = (Constants.PRIVATE_KEY_B + nonceReceived + Constants.PIN_A).getBytes("UTF-8");
-            byte[] longTermSharedKeyString = (Constants.LONGTERM_SHARED_KEY).getBytes("UTF-8");
+            Constants.setPinA(nonceReceived);
 
-            try{
+
+            //TODO: change to base64 decoding
+            //byte[] stringToEncrypt = Base64.encodeBase64((Constants.getPrivateKeyB() + Constants.getPinA() + Constants.getPinB()).getBytes());
+            //byte[] longTermSharedKeyString = Base64.encodeBase64(Constants.getLongTermSharedKey().getBytes());
+
+            byte[] stringToEncrypt = (Constants.getPrivateKeyB() + Constants.getPinA() + Constants.getPinB()).getBytes("UTF-8");
+            byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+
                 MessageDigest sha = MessageDigest.getInstance("SHA-1");
                 longTermSharedKeyString = sha.digest(longTermSharedKeyString);
                 longTermSharedKeyString = Arrays.copyOf(longTermSharedKeyString, 16); // use only first 128 bit
 
                 SecretKeySpec secretKeySpec = new SecretKeySpec(longTermSharedKeyString, "AES");
-                Constants.LONGTERM_SHARED_KEY_SECRET = secretKeySpec;
+                Constants.setLongTermSharedKeySecret(secretKeySpec);
 
                 Cipher cipher = Cipher.getInstance("AES");
                 cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 
                 byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                //String strEncrypted = new String(encrypted, "ISO-8859-15");
+                //byte[] valueDecoded = Base64.decodeBase64(encrypted);
+                //String strEncrypted = new String(valueDecoded);
 
                 String strEncrypted = new String(Base64.encodeBase64(encrypted));
                 strEncrypted.replace('+','-').replace('/','_');
 
-                //append nb = myNonce
-                String finalString = Constants.PIN_A + strEncrypted;
+                String finalString = Constants.getPinB() + strEncrypted;
                 return finalString;
             }
             catch(NoSuchAlgorithmException e){
@@ -191,13 +200,12 @@ public class FirstStepActivity extends AppCompatActivity {
             } catch (InvalidKeyException e) {
                 e.printStackTrace();
                 return null;
+            } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+                return null;
             }
 
-        }
-        catch(UnsupportedEncodingException e){
-            e.printStackTrace();
-            return null;
-        }
+
 
     }
 
@@ -214,11 +222,14 @@ public class FirstStepActivity extends AppCompatActivity {
         String SENT = "SMS_SENT";
         String DELIVERED = "SMS_DELIVERED";
 
-        Intent intentSent = new Intent(SENT);
-        intentSent.putExtra("FIRST_STEP_SESSION_KEY", "1");
+        String step = "1";
+
+        Intent intent = new Intent("my.action.string");
+        intent.putExtra("step_number", step);
+        sendBroadcast(intent);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
-                intentSent, 0);
+                new Intent(SENT), 0);
 
         PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(DELIVERED), 0);
@@ -270,6 +281,25 @@ public class FirstStepActivity extends AppCompatActivity {
                 }
             }
         }, new IntentFilter(DELIVERED));
+
+
+        //row row fight the power!
+        registerReceiver(new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                switch (getResultCode())
+                {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "First step: SMS delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(getBaseContext(), "First step: SMS not delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        }, new IntentFilter("my.action.string"));
 
         try{
             SmsManager sms = SmsManager.getDefault();

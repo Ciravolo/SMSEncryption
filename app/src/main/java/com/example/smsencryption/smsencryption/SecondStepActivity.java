@@ -13,9 +13,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.SmsManager;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import org.apache.commons.codec.binary.Base64;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -41,6 +44,7 @@ public class SecondStepActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         setContentView(R.layout.activity_second_step);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -81,8 +85,21 @@ public class SecondStepActivity extends AppCompatActivity {
     public String generateEncryptedDataSecondStep(){
         try{
 
-            byte[] stringToEncrypt = (Constants.PRIVATE_KEY_A + Constants.PIN_B + Constants.PIN_A).getBytes("UTF-8");
-            byte[] longTermSharedKeyString = (Constants.LONGTERM_SHARED_KEY).getBytes("UTF-8");
+            String sa = Constants.getPrivateKeyA();
+            String sb = Constants.getPrivateKeyB();
+
+            String pa = Constants.getPinA();
+            String pb = Constants.getPinB();
+
+            String saa = sa;
+            String sbb = sb;
+
+            String ppa = pa;
+            String ppb = pb;
+
+            //TODO: change to Base64 decoding
+            byte[] stringToEncrypt = (Constants.getPrivateKeyA() + Constants.getPinB() + Constants.getPinA()).getBytes("UTF-8");
+            byte[] longTermSharedKeyString = (Constants.getLongTermSharedKey()).getBytes("UTF-8");
 
             try{
                 MessageDigest sha = MessageDigest.getInstance("SHA-1");
@@ -90,17 +107,15 @@ public class SecondStepActivity extends AppCompatActivity {
                 longTermSharedKeyString = Arrays.copyOf(longTermSharedKeyString, 16); // use only first 128 bit
 
                 SecretKeySpec secretKeySpec = new SecretKeySpec(longTermSharedKeyString, "AES");
-                Constants.LONGTERM_SHARED_KEY_SECRET = secretKeySpec;
+                Constants.setLongTermSharedKeySecret(secretKeySpec);
 
                 Cipher cipher = Cipher.getInstance("AES");
                 cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 
                 byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                //String strEncrypted = Base64.encodeBase64String(encrypted);
-                String strEncrypted = new String(encrypted, "UTF-8");
-                //append nb = myNonce
-                //String finalString = Constants.PIN_A + strEncrypted;
+                String strEncrypted = new String(Base64.encodeBase64(encrypted));
+                strEncrypted.replace('+','-').replace('/','_');
                 return strEncrypted;
             }
             catch(NoSuchAlgorithmException e){
