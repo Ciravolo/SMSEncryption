@@ -1,5 +1,6 @@
 package com.example.smsencryption.smsencryption;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -9,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -55,6 +57,11 @@ public class SendNonceActivity extends AppCompatActivity {
         lblNonce = (TextView) findViewById(R.id.lblNonce);
         btnSendNonceStart = (Button) findViewById(R.id.btnSendNonceStart);
         btnGetNonceStart = (Button) findViewById(R.id.btnGetNonceStart);
+
+       /* ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.SEND_SMS},1);
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_SMS},1);
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.RECEIVE_SMS},1);
+*/
 
         btnSendNonceStart.setOnClickListener(new View.OnClickListener(){
 

@@ -1,5 +1,6 @@
 package com.example.smsencryption.smsencryption;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -10,6 +11,7 @@ import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -54,6 +56,14 @@ public class FirstStepActivity extends AppCompatActivity {
     private String stringNonce;
     private String nonce;
 
+    private BroadcastReceiver sendBroadcastReceiver;
+    private BroadcastReceiver deliveryBroadcastReceiver;
+    private BroadcastReceiver sendStepReceiver;
+
+    String SENT = "SMS_SENT";
+    String DELIVERED = "SMS_DELIVERED";
+    String STEP = "my.action.string";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,6 +71,66 @@ public class FirstStepActivity extends AppCompatActivity {
         setContentView(R.layout.activity_first_step);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        sendBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (getResultCode())
+                {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "SMS Sent", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                        Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NO_SERVICE:
+                        Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NULL_PDU:
+                        Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_RADIO_OFF:
+                        Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        };
+
+        deliveryBroadcastReceiver = new BroadcastReceiver()
+        {
+            public void onReceive(Context arg0, Intent arg1)
+            {
+                switch (getResultCode())
+                {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "SMS Delivered", Toast.LENGTH_SHORT).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(getBaseContext(), "SMS not delivered", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        };
+
+        sendStepReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (getResultCode()) {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "First step: SMS delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(getBaseContext(), "First step: SMS not delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        };
+
+        registerReceiver(deliveryBroadcastReceiver, new IntentFilter(DELIVERED));
+        registerReceiver(sendBroadcastReceiver , new IntentFilter(SENT));
+        registerReceiver(sendStepReceiver, new IntentFilter(STEP));
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtNonce = (EditText) findViewById(R.id.txtNonce);
@@ -219,11 +289,7 @@ public class FirstStepActivity extends AppCompatActivity {
 
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){
 
-        String SENT = "SMS_SENT";
-        String DELIVERED = "SMS_DELIVERED";
-
         String step = "1";
-
         Intent intent = new Intent("my.action.string");
         intent.putExtra("step_number", step);
         sendBroadcast(intent);
@@ -233,73 +299,6 @@ public class FirstStepActivity extends AppCompatActivity {
 
         PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(DELIVERED), 0);
-
-        //---when the SMS has been sent---
-        registerReceiver(new BroadcastReceiver(){
-            @Override
-            public void onReceive(Context arg0, Intent arg1) {
-                switch (getResultCode())
-                {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "SMS sent",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                        Toast.makeText(getBaseContext(), "Generic failure",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_NO_SERVICE:
-                        Toast.makeText(getBaseContext(), "No service",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_NULL_PDU:
-                        Toast.makeText(getBaseContext(), "Null PDU",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_RADIO_OFF:
-                        Toast.makeText(getBaseContext(), "Radio off",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        }, new IntentFilter(SENT));
-
-        //---when the SMS has been delivered---
-        registerReceiver(new BroadcastReceiver(){
-            @Override
-            public void onReceive(Context arg0, Intent arg1) {
-                switch (getResultCode())
-                {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "SMS delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case Activity.RESULT_CANCELED:
-                        Toast.makeText(getBaseContext(), "SMS not delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        }, new IntentFilter(DELIVERED));
-
-
-        //row row fight the power!
-        registerReceiver(new BroadcastReceiver(){
-            @Override
-            public void onReceive(Context arg0, Intent arg1) {
-                switch (getResultCode())
-                {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "First step: SMS delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case Activity.RESULT_CANCELED:
-                        Toast.makeText(getBaseContext(), "First step: SMS not delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        }, new IntentFilter("my.action.string"));
 
         try{
             SmsManager sms = SmsManager.getDefault();
@@ -331,6 +330,22 @@ public class FirstStepActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onStop(){
+        unregisterReceiver(sendBroadcastReceiver);
+        unregisterReceiver(deliveryBroadcastReceiver);
+        unregisterReceiver(sendStepReceiver);
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroy(){
+        unregisterReceiver(sendBroadcastReceiver);
+        unregisterReceiver(deliveryBroadcastReceiver);
+        unregisterReceiver(sendStepReceiver);
+        super.onDestroy();
     }
 
 }

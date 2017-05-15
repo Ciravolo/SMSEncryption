@@ -41,6 +41,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
         if(action.equals("my.action.string")){
             String step = intent.getExtras().getString("step_number");
+            Log.i("Receiver", "Step number: "+ step);
         }
 
         //---get the SMS message passed in---
@@ -52,23 +53,25 @@ public class SmsReceiver extends BroadcastReceiver{
             Object[] pdus = (Object[]) bundle.get("pdus");
 
            // boolean firstStep =(boolean) bundle.get("FIRST_STEP_SESSION_KEY");
+            if (pdus!=null){
+                msgs = new SmsMessage[pdus.length];
+                for (int i = 0; i < msgs.length; i++) {
 
-            msgs = new SmsMessage[pdus.length];
-            for (int i = 0; i < msgs.length; i++) {
+                    //this has to be only for android versions < 19
+                    if (Build.VERSION.SDK_INT < 19) {
+                        msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                    }else{
+                        //check if this works because this is only for the case sdk >=19
+                        msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+                    }
 
-                //this has to be only for android versions < 19
-                if (Build.VERSION.SDK_INT < 19) {
-                    msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
-                }else{
-                    //check if this works because this is only for the case sdk >=19
-                    msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+                    str += "SMS from " + msgs[i].getOriginatingAddress();
+                    str += " :";
+                    str += msgs[i].getMessageBody().toString();
+                    str += "\n";
                 }
-
-                str += "SMS from " + msgs[i].getOriginatingAddress();
-                str += " :";
-                str += msgs[i].getMessageBody().toString();
-                str += "\n";
             }
+
 
 //            if (first_step_session_key!=null) {
 //                if (first_step_session_key.compareTo("1") == 0) {

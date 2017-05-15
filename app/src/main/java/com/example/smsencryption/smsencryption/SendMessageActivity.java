@@ -1,5 +1,6 @@
 package com.example.smsencryption.smsencryption;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -8,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -50,7 +52,11 @@ public class SendMessageActivity extends AppCompatActivity {
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtMessage = (EditText) findViewById(R.id.txtMessage);
         btnSendMessage = (Button) findViewById(R.id.btnSendMessage);
-
+/*
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.SEND_SMS},1);
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_SMS},1);
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.RECEIVE_SMS},1);
+*/
         btnSendMessage.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){
