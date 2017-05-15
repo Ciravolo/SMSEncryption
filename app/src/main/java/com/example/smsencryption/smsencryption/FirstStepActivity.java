@@ -58,7 +58,7 @@ public class FirstStepActivity extends AppCompatActivity {
 
     private BroadcastReceiver sendBroadcastReceiver;
     private BroadcastReceiver deliveryBroadcastReceiver;
-    private BroadcastReceiver sendStepReceiver;
+    private BroadcastReceiver sendStepBroadcastReceiver;
 
     String SENT = "SMS_SENT";
     String DELIVERED = "SMS_DELIVERED";
@@ -112,7 +112,7 @@ public class FirstStepActivity extends AppCompatActivity {
             }
         };
 
-        sendStepReceiver = new BroadcastReceiver() {
+        sendStepBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 switch (getResultCode()) {
@@ -130,7 +130,7 @@ public class FirstStepActivity extends AppCompatActivity {
 
         registerReceiver(deliveryBroadcastReceiver, new IntentFilter(DELIVERED));
         registerReceiver(sendBroadcastReceiver , new IntentFilter(SENT));
-        registerReceiver(sendStepReceiver, new IntentFilter(STEP));
+        registerReceiver(sendStepBroadcastReceiver, new IntentFilter(STEP));
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         txtNonce = (EditText) findViewById(R.id.txtNonce);
@@ -336,7 +336,7 @@ public class FirstStepActivity extends AppCompatActivity {
     protected void onStop(){
         unregisterReceiver(sendBroadcastReceiver);
         unregisterReceiver(deliveryBroadcastReceiver);
-        unregisterReceiver(sendStepReceiver);
+        unregisterReceiver(sendStepBroadcastReceiver);
         super.onStop();
     }
 
@@ -344,7 +344,7 @@ public class FirstStepActivity extends AppCompatActivity {
     public void onDestroy(){
         unregisterReceiver(sendBroadcastReceiver);
         unregisterReceiver(deliveryBroadcastReceiver);
-        unregisterReceiver(sendStepReceiver);
+        unregisterReceiver(sendStepBroadcastReceiver);
         super.onDestroy();
     }
 
