@@ -30,12 +30,6 @@ public class StartActivity extends AppCompatActivity {
         btnStep2 = (Button) findViewById(R.id.btnStep2);
         btnSendMessage = (Button) findViewById(R.id.btnSendMessage);
 
-        /*
-        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.SEND_SMS},1);
-        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_SMS},1);
-        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.RECEIVE_SMS},1);
-*/
-
         btnSendNonce.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v){

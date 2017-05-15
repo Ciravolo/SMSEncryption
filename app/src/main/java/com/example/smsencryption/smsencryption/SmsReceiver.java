@@ -33,21 +33,14 @@ public class SmsReceiver extends BroadcastReceiver{
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        //String first_step_session_key = intent.getStringExtra("FIRST_STEP_SESSION_KEY");
-        //String second_step_session_key = intent.getStringExtra("SECOND_STEP_SESSION_KEY");
 
-        String action = intent.getAction();
-        Log.i("Receiver", "Broadcast received: " + action);
-
-        if(action.equals("my.action.string")){
-            String step = intent.getExtras().getString("step_number");
-            Log.i("Receiver", "Step number: "+ step);
-        }
 
         //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
         SmsMessage[] msgs = null;
         String str = "";
+        String rawMessage = "";
+
         if (bundle != null) {
             //---retrieve the SMS message received---
             Object[] pdus = (Object[]) bundle.get("pdus");
@@ -65,6 +58,8 @@ public class SmsReceiver extends BroadcastReceiver{
                         msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
                     }
 
+                    rawMessage += msgs[i].getMessageBody();
+
                     str += "SMS from " + msgs[i].getOriginatingAddress();
                     str += " :";
                     str += msgs[i].getMessageBody().toString();
@@ -72,55 +67,63 @@ public class SmsReceiver extends BroadcastReceiver{
                 }
             }
 
-
-//            if (first_step_session_key!=null) {
-//                if (first_step_session_key.compareTo("1") == 0) {
-/*
-                    try {
-
-                        //TODO Instead of returning a privateKey in the following method it would
-                        // be better to obtain the value from the global variable
-
-                        privateKeyB = obtainPrivateKeyFromSenderFirstStep(str);
-                        Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
-
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } catch (BadPaddingException e) {
-                        e.printStackTrace();
-                    } catch (IllegalBlockSizeException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchPaddingException e) {
-                        e.printStackTrace();
-                    }
-  //              }
-  //          }
-
-  //          if (second_step_session_key != null) {
-  //              if (second_step_session_key.compareTo("1") == 0) {
-
-                    try {
-                         //TODO Instead of returning a privateKey in the following method it would
-                        // be better to obtain the value from the global variable
-
-                        privateKeyA = obtainPrivateKeyFromSenderSecondStep(str);
-                        Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
-
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } catch (BadPaddingException e) {
-                        e.printStackTrace();
-                    } catch (IllegalBlockSizeException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchPaddingException e) {
-                        e.printStackTrace();
-                    }*/
-   //             }
-    //        }
-
-            //---display the new SMS message---
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }
+
+        if (!rawMessage.equals("")){
+
+            String action = intent.getAction();
+            Log.i("Receiver", "Broadcast received: " + action);
+
+            if(action.equals("my.action.string")){
+                String step = intent.getExtras().getString("step_number");
+                int stepNumber = Integer.parseInt(step);
+
+                switch(stepNumber){
+
+                    case 1:
+                        try {
+
+                            privateKeyB = obtainPrivateKeyFromSenderFirstStep(rawMessage);
+                            Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
+
+                        } catch (IllegalBlockSizeException e) {
+                            e.printStackTrace();
+                        } catch (NoSuchPaddingException e) {
+                            e.printStackTrace();
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        } catch (BadPaddingException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 2:
+                        try {
+                            //TODO Instead of returning a privateKey in the following method it would
+                            // be better to obtain the value from the global variable
+
+                            privateKeyA = obtainPrivateKeyFromSenderSecondStep(str);
+                            Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
+
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        } catch (BadPaddingException e) {
+                            e.printStackTrace();
+                        } catch (IllegalBlockSizeException e) {
+                            e.printStackTrace();
+                        } catch (NoSuchPaddingException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 3:
+                            //when the message is sent and the protocol has been established in
+                        //both sides
+                        break;
+
+                }
+            }
+        }
+
     }
 
 
@@ -149,8 +152,6 @@ public class SmsReceiver extends BroadcastReceiver{
         return Base64.encodeBase64String(bytes).replaceAll("\\s", "");
 
     }
-
-
 
     public String obtainPrivateKeyFromSenderFirstStep(String str)
             throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
