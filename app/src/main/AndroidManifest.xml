@@ -44,10 +44,12 @@
             android:label="@string/title_activity_second_step"
             android:theme="@style/AppTheme.NoActionBar"></activity>
 
-        <receiver android:name=".SmsReceiver" android:enabled="true">-->
+        <receiver android:name=".SmsReceiver" android:enabled="true">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-                <action android:name="my.action.string" />
+           </intent-filter>
+           <intent-filter>
+               <action android:name="my.action.string" />
            </intent-filter>
         </receiver>
 
