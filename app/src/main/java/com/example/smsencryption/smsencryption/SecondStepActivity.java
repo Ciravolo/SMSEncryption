@@ -43,9 +43,65 @@ public class SecondStepActivity extends AppCompatActivity {
     EditText txtPhoneNumber;
     Button btnSendSecondStep;
 
-    private BroadcastReceiver sendBroadcastReceiver;
-    private BroadcastReceiver deliveryBroadcastReceiver;
-    private BroadcastReceiver sendStepBroadcastReceiver;
+    private BroadcastReceiver  sendBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (getResultCode())
+            {
+                case Activity.RESULT_OK:
+                    Toast.makeText(getBaseContext(), "SMS sent",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                    Toast.makeText(getBaseContext(), "Generic failure",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case SmsManager.RESULT_ERROR_NO_SERVICE:
+                    Toast.makeText(getBaseContext(), "No service",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case SmsManager.RESULT_ERROR_NULL_PDU:
+                    Toast.makeText(getBaseContext(), "Null PDU",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case SmsManager.RESULT_ERROR_RADIO_OFF:
+                    Toast.makeText(getBaseContext(), "Radio off",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
+
+    private BroadcastReceiver deliveryBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (getResultCode())
+            {
+                case Activity.RESULT_OK:
+                    Toast.makeText(getBaseContext(), "SMS Delivered", Toast.LENGTH_SHORT).show();
+                    break;
+                case Activity.RESULT_CANCELED:
+                    Toast.makeText(getBaseContext(), "SMS not delivered", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
+
+    private BroadcastReceiver sendStepBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (getResultCode()) {
+                case Activity.RESULT_OK:
+                    Toast.makeText(getBaseContext(), "Second step: SMS delivered",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+                case Activity.RESULT_CANCELED:
+                    Toast.makeText(getBaseContext(), "Second step: SMS not delivered",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
 
     String SENT = "SMS_SENT";
     String DELIVERED = "SMS_DELIVERED";
@@ -58,71 +114,6 @@ public class SecondStepActivity extends AppCompatActivity {
         setContentView(R.layout.activity_second_step);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        sendBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                switch (getResultCode())
-                {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "SMS sent",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                        Toast.makeText(getBaseContext(), "Generic failure",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_NO_SERVICE:
-                        Toast.makeText(getBaseContext(), "No service",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_NULL_PDU:
-                        Toast.makeText(getBaseContext(), "Null PDU",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case SmsManager.RESULT_ERROR_RADIO_OFF:
-                        Toast.makeText(getBaseContext(), "Radio off",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        };
-
-        deliveryBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                switch (getResultCode())
-                {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "SMS Delivered", Toast.LENGTH_SHORT).show();
-                        break;
-                    case Activity.RESULT_CANCELED:
-                        Toast.makeText(getBaseContext(), "SMS not delivered", Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        };
-
-        sendStepBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                switch (getResultCode()) {
-                    case Activity.RESULT_OK:
-                        Toast.makeText(getBaseContext(), "Second step: SMS delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                    case Activity.RESULT_CANCELED:
-                        Toast.makeText(getBaseContext(), "Second step: SMS not delivered",
-                                Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        };
-
-
-        registerReceiver(deliveryBroadcastReceiver, new IntentFilter(DELIVERED));
-        registerReceiver(sendBroadcastReceiver , new IntentFilter(SENT));
-        registerReceiver(sendStepBroadcastReceiver, new IntentFilter(STEP));
 
         txtPhoneNumber = (EditText) findViewById(R.id.txtPhoneNumber);
         btnSendSecondStep = (Button) findViewById(R.id.btnSendSecondStep);
@@ -217,7 +208,6 @@ public class SecondStepActivity extends AppCompatActivity {
 
     }
 
-
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){
 
         String step = "2";
@@ -242,19 +232,23 @@ public class SecondStepActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+    }
+
+    @Override
     protected void onStop(){
-        unregisterReceiver(sendBroadcastReceiver);
-        unregisterReceiver(deliveryBroadcastReceiver);
-        unregisterReceiver(sendStepBroadcastReceiver);
         super.onStop();
     }
 
     @Override
-    public void onDestroy(){
-        unregisterReceiver(sendBroadcastReceiver);
-        unregisterReceiver(deliveryBroadcastReceiver);
-        unregisterReceiver(sendStepBroadcastReceiver);
-        super.onDestroy();
+    public void onPause(){
+        super.onPause();
     }
 
 }

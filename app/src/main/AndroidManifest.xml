@@ -8,14 +8,15 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
-
 
         <activity
             android:name=".StartActivity"
@@ -43,13 +44,13 @@
             android:label="@string/title_activity_second_step"
             android:theme="@style/AppTheme.NoActionBar"></activity>
 
-        <receiver android:name=".SmsReceiver" android:enabled="true">
+        <receiver android:name=".SmsReceiver" android:enabled="true">-->
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="my.action.string" />
-            </intent-filter>
+           </intent-filter>
         </receiver>
 
-    </application>
+   </application>
 
 </manifest>

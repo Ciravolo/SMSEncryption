@@ -30,16 +30,19 @@ public class SmsReceiver extends BroadcastReceiver{
     private String privateKeyA="";
     private String privateKeyB="";
     private String nonceFromSenderB="";
+
+    private String raw = "";
+
     @Override
     public void onReceive(Context context, Intent intent) {
 
-
-
-        //---get the SMS message passed in---
         Bundle bundle = intent.getExtras();
         SmsMessage[] msgs = null;
         String str = "";
         String rawMessage = "";
+
+        String action = intent.getAction();
+        Log.i("Receiver", "Broadcast received: " + action);
 
         if (bundle != null) {
             //---retrieve the SMS message received---
@@ -48,35 +51,39 @@ public class SmsReceiver extends BroadcastReceiver{
            // boolean firstStep =(boolean) bundle.get("FIRST_STEP_SESSION_KEY");
             if (pdus!=null){
                 msgs = new SmsMessage[pdus.length];
-                for (int i = 0; i < msgs.length; i++) {
 
-                    //this has to be only for android versions < 19
-                    if (Build.VERSION.SDK_INT < 19) {
-                        msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
-                    }else{
-                        //check if this works because this is only for the case sdk >=19
-                        msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+                if (msgs!=null){
+                    for (int i = 0; i < msgs.length; i++) {
+
+                        //this has to be only for android versions < 19
+                        if (Build.VERSION.SDK_INT < 19) {
+                            msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                        }else{
+                            //check if this works because this is only for the case sdk >=19
+                            msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+                        }
+
+                        raw += msgs[i].getMessageBody();
+
+                        str += "SMS from " + msgs[i].getOriginatingAddress();
+                        str += " :";
+                        str += msgs[i].getMessageBody().toString();
+                        str += "\n";
                     }
-
-                    rawMessage += msgs[i].getMessageBody();
-
-                    str += "SMS from " + msgs[i].getOriginatingAddress();
-                    str += " :";
-                    str += msgs[i].getMessageBody().toString();
-                    str += "\n";
                 }
             }
 
             Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
         }
 
-        if (!rawMessage.equals("")){
+        if (!raw.equals("")){
 
-            String action = intent.getAction();
-            Log.i("Receiver", "Broadcast received: " + action);
+            Log.i("Receiver", "Raw message: "+ raw);
 
             if(action.equals("my.action.string")){
+
                 String step = intent.getExtras().getString("step_number");
+                Log.i("Action string: STEP ", step);
                 int stepNumber = Integer.parseInt(step);
 
                 switch(stepNumber){
@@ -84,7 +91,7 @@ public class SmsReceiver extends BroadcastReceiver{
                     case 1:
                         try {
 
-                            privateKeyB = obtainPrivateKeyFromSenderFirstStep(rawMessage);
+                            privateKeyB = obtainPrivateKeyFromSenderFirstStep(raw);
                             Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
 
                         } catch (IllegalBlockSizeException e) {
