@@ -210,11 +210,11 @@ public class SecondStepActivity extends AppCompatActivity {
 
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){
 
-        String step = "2";
+        /*String step = "2";
         Intent intent = new Intent("my.action.string");
         intent.putExtra("step_number", step);
         sendBroadcast(intent);
-
+*/
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), 0);
 

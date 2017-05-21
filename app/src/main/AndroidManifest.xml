@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.smsencryption.smsencryption"
     android:versionCode="1"
-    android:versionName="1.0.0">
+    android:versionName="1.0.0"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -11,12 +12,18 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
+    <uses-sdk tools:overrideLibrary="com.facebook.react, com.airbnb.android.react.maps"></uses-sdk>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD1HjCq07-RQ15Hgq0Jl2TzVYe7GIMj2Wo"></meta-data>
 
         <activity
             android:name=".StartActivity"
@@ -48,9 +55,10 @@
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
            </intent-filter>
-           <intent-filter>
+
+            <!--<intent-filter>
                <action android:name="my.action.string" />
-           </intent-filter>
+           </intent-filter>-->
         </receiver>
 
    </application>

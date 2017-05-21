@@ -281,11 +281,11 @@ public class FirstStepActivity extends AppCompatActivity {
 
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){
 
-        String step = "1";
+       /* String step = "1";
         Intent intent = new Intent("my.action.string");
         intent.putExtra("step_number", step);
         sendBroadcast(intent);
-
+*/
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), 0);
 
@@ -295,7 +295,11 @@ public class FirstStepActivity extends AppCompatActivity {
         try{
             SmsManager sms = SmsManager.getDefault();
             Toast.makeText(getApplicationContext(), "Phone number to send:"+phoneNumber, Toast.LENGTH_LONG).show();
-            sms.sendTextMessage(phoneNumber, null, encryptedMessage, sentPI, deliveredPI);
+
+            //before sending the message I append the step
+            String m = encryptedMessage+":1";
+
+            sms.sendTextMessage(phoneNumber, null, m, sentPI, deliveredPI);
         } catch(Exception e){
             Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
             e.printStackTrace();

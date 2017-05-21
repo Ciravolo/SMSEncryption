@@ -30,7 +30,6 @@ public class SmsReceiver extends BroadcastReceiver{
     private String privateKeyA="";
     private String privateKeyB="";
     private String nonceFromSenderB="";
-
     private String raw = "";
 
     @Override
@@ -78,55 +77,55 @@ public class SmsReceiver extends BroadcastReceiver{
 
         if (!raw.equals("")){
 
-            Log.i("Receiver", "Raw message: "+ raw);
+            String[] arr = raw.split(":");
+            if (arr!=null)
+            {
+                String encryptedMessage = arr[0];
+                if (arr.length>1){
+                    int stepProtocol = Integer.parseInt(arr[1]);
 
-            if(action.equals("my.action.string")){
+                    switch(stepProtocol){
 
-                String step = intent.getExtras().getString("step_number");
-                Log.i("Action string: STEP ", step);
-                int stepNumber = Integer.parseInt(step);
+                        case 1:
+                            try {
 
-                switch(stepNumber){
+                                privateKeyB = obtainPrivateKeyFromSenderFirstStep(encryptedMessage);
+                                Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
 
-                    case 1:
-                        try {
+                            } catch (IllegalBlockSizeException e) {
+                                e.printStackTrace();
+                            } catch (NoSuchPaddingException e) {
+                                e.printStackTrace();
+                            } catch (NoSuchAlgorithmException e) {
+                                e.printStackTrace();
+                            } catch (BadPaddingException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case 2:
+                            try {
+                                //TODO Instead of returning a privateKey in the following method it would
+                                // be better to obtain the value from the global variable
 
-                            privateKeyB = obtainPrivateKeyFromSenderFirstStep(raw);
-                            Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
+                                privateKeyA = obtainPrivateKeyFromSenderSecondStep(encryptedMessage);
+                                Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
 
-                        } catch (IllegalBlockSizeException e) {
-                            e.printStackTrace();
-                        } catch (NoSuchPaddingException e) {
-                            e.printStackTrace();
-                        } catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        } catch (BadPaddingException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case 2:
-                        try {
-                            //TODO Instead of returning a privateKey in the following method it would
-                            // be better to obtain the value from the global variable
-
-                            privateKeyA = obtainPrivateKeyFromSenderSecondStep(str);
-                            Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
-
-                        } catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        } catch (BadPaddingException e) {
-                            e.printStackTrace();
-                        } catch (IllegalBlockSizeException e) {
-                            e.printStackTrace();
-                        } catch (NoSuchPaddingException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case 3:
+                            } catch (NoSuchAlgorithmException e) {
+                                e.printStackTrace();
+                            } catch (BadPaddingException e) {
+                                e.printStackTrace();
+                            } catch (IllegalBlockSizeException e) {
+                                e.printStackTrace();
+                            } catch (NoSuchPaddingException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case 3:
                             //when the message is sent and the protocol has been established in
-                        //both sides
-                        break;
+                            //both sides
+                            break;
 
+                    }
                 }
             }
         }

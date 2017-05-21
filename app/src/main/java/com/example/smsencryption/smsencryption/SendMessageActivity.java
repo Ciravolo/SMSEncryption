@@ -211,12 +211,12 @@ public class SendMessageActivity extends AppCompatActivity {
         }
 
     private void sendEncryptedSMS(String phoneNumber, String message){
-
+/*
         String step = "3";
         Intent intent = new Intent("my.action.string");
         intent.putExtra("step_number", step);
         sendBroadcast(intent);
-
+*/
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), 0);
 
