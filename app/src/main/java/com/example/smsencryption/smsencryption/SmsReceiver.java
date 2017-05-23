@@ -1,11 +1,15 @@
 package com.example.smsencryption.smsencryption;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
+import android.support.v7.app.AlertDialog;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
@@ -13,14 +17,18 @@ import org.apache.commons.codec.binary.Base64;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+
+import static android.content.Context.ACTIVITY_SERVICE;
 
 /**
  * Created by joana on 4/16/17.
@@ -34,6 +42,7 @@ public class SmsReceiver extends BroadcastReceiver{
     private String privateKeyB="";
     private String nonceFromSenderB="";
     private String raw = "";
+    private boolean sessionErrorKey = false;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -41,7 +50,6 @@ public class SmsReceiver extends BroadcastReceiver{
         Bundle bundle = intent.getExtras();
         SmsMessage[] msgs = null;
         String str = "";
-        String rawMessage = "";
 
         String action = intent.getAction();
         Log.i("Receiver", "Broadcast received: " + action);
@@ -92,49 +100,151 @@ public class SmsReceiver extends BroadcastReceiver{
                         case 1:
                             try {
 
-                                privateKeyB = obtainPrivateKeyFromSenderFirstStep(encryptedMessage);
-                                Constants.setSessionKeyA(encode(Constants.getPrivateKeyA() , privateKeyB));
+                                obtainPrivateKeyFromSenderFirstStep(encryptedMessage);
+                                byte[] xorSessionKey = xor(Constants.getPrivateKeyA().getBytes("UTF-8") , privateKeyB.getBytes("UTF-8"));
+                                Constants.setSessionKeyA(new String(Base64.encodeBase64(xorSessionKey)));
+                                if (Constants.getSessionKeyA().equals("")){
+                                    //couldn't create the session key for A. send alert
+                                    sessionErrorKey = true;
+                                }
 
                             } catch (IllegalBlockSizeException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (NoSuchPaddingException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (NoSuchAlgorithmException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (BadPaddingException e) {
+                                sessionErrorKey = true;
+                                e.printStackTrace();
+                            } catch (UnsupportedEncodingException e){
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             }
                             break;
                         case 2:
                             try {
-                                //TODO Instead of returning a privateKey in the following method it would
-                                // be better to obtain the value from the global variable
-
-                                privateKeyA = obtainPrivateKeyFromSenderSecondStep(encryptedMessage);
-                                Constants.setSessionKeyB(encode(privateKeyA , Constants.getPrivateKeyB()));
+                                obtainPrivateKeyFromSenderSecondStep(encryptedMessage);
+                                byte[] xorSessionKey = xor(privateKeyA.getBytes("UTF-8") , Constants.getPrivateKeyB().getBytes("UTF-8"));
+                                String s_test = new String(Base64.encodeBase64(xorSessionKey));
+                                String test_2 = s_test;
+                                Constants.setSessionKeyB(s_test);
 
                             } catch (NoSuchAlgorithmException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (BadPaddingException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (IllegalBlockSizeException e) {
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             } catch (NoSuchPaddingException e) {
+                                sessionErrorKey = true;
+                                e.printStackTrace();
+                            } catch (UnsupportedEncodingException e){
+                                sessionErrorKey = true;
                                 e.printStackTrace();
                             }
                             break;
                         case 3:
-                            //when the message is sent and the protocol has been established in
-                            //both sides
+                            //when the session has already been established, both parts should have the same session key set.
+                            if (Constants.getSessionKeyA().equals("") && Constants.getSessionKeyB().equals("")){
+                                //means everything is blank and session key hasnt been established: error
+                                sessionErrorKey = true;
+                            }else{
+                                String key = Constants.getSessionKeyA().equals("") ? Constants.getSessionKeyB(): Constants.getSessionKeyA();
+
+                                byte[] keyArray = new byte[0];
+
+                                try {
+                                    keyArray = key.getBytes("UTF-8");
+                                } catch (UnsupportedEncodingException e) {
+                                    e.printStackTrace();
+                                }
+                                MessageDigest sha = null;
+                                try {
+                                    sha = MessageDigest.getInstance("SHA-1");
+                                } catch (NoSuchAlgorithmException e) {
+                                    e.printStackTrace();
+                                }
+                                keyArray = sha.digest(keyArray);
+                                keyArray = Arrays.copyOf(keyArray, 16); // use only first 128 bit
+                                SecretKeySpec secretKeySpec = new SecretKeySpec(keyArray, "AES");
+
+                                String plaintext = null;
+                                try {
+                                    plaintext = decryptPrivateMessageWithSessionKey(secretKeySpec,str);
+                                } catch (IllegalBlockSizeException e) {
+                                    e.printStackTrace();
+                                    sessionErrorKey = true;
+                                } catch (NoSuchPaddingException e) {
+                                    e.printStackTrace();
+                                    sessionErrorKey = true;
+                                } catch (NoSuchAlgorithmException e) {
+                                    e.printStackTrace();
+                                    sessionErrorKey = true;
+                                } catch (BadPaddingException e) {
+                                    e.printStackTrace();
+                                    sessionErrorKey = true;
+                                }
+
+                                Toast.makeText(context, "Decrypted message: "+ plaintext, Toast.LENGTH_SHORT).show();
+                            }
+
                             break;
 
                     }
+
+                    if (sessionErrorKey){
+                        Toast.makeText(context, "Error: could not establish the session key.", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(context, "Success: Session Key established.", Toast.LENGTH_SHORT).show();
+                    }
+
                 }
             }
         }
 
     }
 
+
+    private String decryptPrivateMessageWithSessionKey(SecretKeySpec key, String messageToDecrypt)
+            throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
+
+        Cipher cipher = Cipher.getInstance("AES");
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, key);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        try{
+            byte[] original = cipher.doFinal(Base64.decodeBase64(messageToDecrypt.getBytes("UTF-8")));
+            String decryptedMessage = new String(original, "UTF-8");
+            return decryptedMessage;
+        }catch(UnsupportedEncodingException e){
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    private static byte[] xor(byte[] a, byte[] b){
+        byte[] result = new byte[Math.min(a.length, b.length)];
+
+        int len = result.length;
+
+        for (int i=0; i<result.length; i++){
+            result[i] = (byte) (((int) a[i]) ^ ((int) b[i]));
+        }
+        return result;
+    }
 
 
     private byte[] xorWithKey(byte[] a, byte[] key) {
@@ -162,7 +272,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
     }
 
-    public String obtainPrivateKeyFromSenderFirstStep(String str)
+    public void obtainPrivateKeyFromSenderFirstStep(String str)
             throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
 
         try {
@@ -170,23 +280,21 @@ public class SmsReceiver extends BroadcastReceiver{
             ByteBuffer buffer = ByteBuffer.wrap(data);
 
             byte[] nonceArray = Arrays.copyOfRange(data,0,24);
-
             byte[] dataToDecryptArray =  Arrays.copyOfRange(data, 24, data.length);
 
             nonceFromSenderB = new String(nonceArray);
             Constants.setPinB(nonceFromSenderB);
 
             String stringToDecrypt = new String(dataToDecryptArray);
-            return decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
+            decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
 
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-            return null;
         }
     }
 
 
-    public String obtainPrivateKeyFromSenderSecondStep(String str)
+    public void obtainPrivateKeyFromSenderSecondStep(String str)
             throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
 
         Cipher cipher = Cipher.getInstance("AES");
@@ -194,48 +302,36 @@ public class SmsReceiver extends BroadcastReceiver{
             cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
         } catch (InvalidKeyException e) {
             e.printStackTrace();
-            return null;
         }
 
         try{
-            byte[] original = cipher.doFinal(str.getBytes("UTF-8"));
+            byte[] original = cipher.doFinal(Base64.decodeBase64(str.getBytes("UTF-8")));
 
-            ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
-
-            privateKeyA = new String(Base64.encodeBase64(privateKeyBuffer.array()));
-            privateKeyA.replace('+','-').replace('/','_');
-            return privateKeyA;
+            byte[] privateKeyBuffer = Arrays.copyOfRange(original, 0, 16);
+            privateKeyA = new String(privateKeyBuffer, "UTF-8");
 
         }catch(UnsupportedEncodingException e){
             e.printStackTrace();
-            return null;
         }
     }
 
 
-    public String decryptPrivateKeyFromSenderFirstStep(String decryptData)
+    public void decryptPrivateKeyFromSenderFirstStep(String decryptData)
             throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
 
         Cipher cipher = Cipher.getInstance("AES");
         try {
-
-            SecretKeySpec s = Constants.getLongtermSharedKeySecret();
             cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
         } catch (InvalidKeyException e) {
             e.printStackTrace();
-            return null;
         }
 
         try{
             byte[] original = cipher.doFinal(Base64.decodeBase64(decryptData.getBytes("UTF-8")));
             byte[] privateKeyBuffer = Arrays.copyOfRange(original, 0, 16);
             privateKeyB = new String(privateKeyBuffer, "UTF-8");
-            //privateKeyB.replace('+','-').replace('/','_');
-            return privateKeyB;
-
         }catch(UnsupportedEncodingException e){
             e.printStackTrace();
-            return null;
         }
 
     }

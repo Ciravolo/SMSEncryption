@@ -224,7 +224,11 @@ public class SecondStepActivity extends AppCompatActivity {
         try{
             SmsManager sms = SmsManager.getDefault();
             Toast.makeText(getApplicationContext(), "Phone number to send:"+phoneNumber, Toast.LENGTH_LONG).show();
-            sms.sendTextMessage(phoneNumber, null, encryptedMessage, sentPI, deliveredPI);
+
+            //before sending the message I append the step
+            String m = encryptedMessage+":2";
+
+            sms.sendTextMessage(phoneNumber, null, m, sentPI, deliveredPI);
         } catch(Exception e){
             Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
             e.printStackTrace();

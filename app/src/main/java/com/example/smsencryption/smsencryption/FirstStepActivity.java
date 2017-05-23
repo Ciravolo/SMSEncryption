@@ -238,9 +238,6 @@ public class FirstStepActivity extends AppCompatActivity {
 
                 byte[] encrypted = cipher.doFinal(stringToEncrypt);
 
-                //byte[] valueDecoded = Base64.decodeBase64(encrypted);
-                //String strEncrypted = new String(valueDecoded);
-
                 String strEncrypted = new String(Base64.encodeBase64(encrypted));
                 strEncrypted.replace('+','-').replace('/','_');
 
@@ -281,11 +278,6 @@ public class FirstStepActivity extends AppCompatActivity {
 
     private void sendEncryptedSMS(String phoneNumber, String encryptedMessage){
 
-       /* String step = "1";
-        Intent intent = new Intent("my.action.string");
-        intent.putExtra("step_number", step);
-        sendBroadcast(intent);
-*/
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), 0);
 
