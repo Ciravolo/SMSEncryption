@@ -177,7 +177,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                 String plaintext = null;
                                 try {
-                                    plaintext = decryptPrivateMessageWithSessionKey(secretKeySpec,str);
+                                    plaintext = decryptPrivateMessageWithSessionKey(secretKeySpec,encryptedMessage);
+                                    String test = plaintext;
+                                    String tt = test;
+
                                 } catch (IllegalBlockSizeException e) {
                                     e.printStackTrace();
                                     sessionErrorKey = true;
@@ -192,7 +195,11 @@ public class SmsReceiver extends BroadcastReceiver{
                                     sessionErrorKey = true;
                                 }
 
-                                Toast.makeText(context, "Decrypted message: "+ plaintext, Toast.LENGTH_SHORT).show();
+                                if (plaintext!=null){
+                                    Toast.makeText(context, "Decrypted message: "+ plaintext, Toast.LENGTH_SHORT).show();
+                                } else {
+                                    sessionErrorKey = true;
+                                }
                             }
 
                             break;
@@ -226,7 +233,11 @@ public class SmsReceiver extends BroadcastReceiver{
 
         try{
             byte[] original = cipher.doFinal(Base64.decodeBase64(messageToDecrypt.getBytes("UTF-8")));
+            byte[] oo = original;
+
             String decryptedMessage = new String(original, "UTF-8");
+            String dd = decryptedMessage;
+            
             return decryptedMessage;
         }catch(UnsupportedEncodingException e){
             e.printStackTrace();
