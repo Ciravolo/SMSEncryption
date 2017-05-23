@@ -25,6 +25,9 @@ public class StartActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.SEND_SMS,
+                Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS},1);
+
         btnSendNonce = (Button) findViewById(R.id.btnSendNonce);
         btnStep1 = (Button) findViewById(R.id.btnStep1);
         btnStep2 = (Button) findViewById(R.id.btnStep2);

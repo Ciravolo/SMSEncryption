@@ -5,16 +5,16 @@ android {
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "com.example.smsencryption.smsencryption"
-        minSdkVersion 15
-        targetSdkVersion 15
+        minSdkVersion 23
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        externalNativeBuild {
+        /*externalNativeBuild {
             cmake {
                 cppFlags ""
             }
-        }
+        }*/
         jackOptions {
             enabled true
         }
@@ -41,9 +41,9 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:appcompat-v7:+'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.android.support:design:25.3.1'
+    compile 'com.android.support:design:+'
     compile 'com.facebook.react:react-native:+'
     compile 'com.airbnb.android:react-native-maps:+'
     compile 'com.google.android.gms:play-services-base:+'

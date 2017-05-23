@@ -18,8 +18,8 @@ public class Constants {
     public static SecretKeySpec LONGTERM_SHARED_KEY_SECRET;
     public static String SESSION_KEY_A = "";
     public static String SESSION_KEY_B = "";
-    public static final String PRIVATE_KEY_A = "privatekeyA";
-    public static final String PRIVATE_KEY_B = "privatekeyB";
+    public static final String PRIVATE_KEY_A = "privatekeyA12345";
+    public static final String PRIVATE_KEY_B = "privatekeyB12345";
     public static String PIN_A = "";
     public static String PIN_B = "";
 

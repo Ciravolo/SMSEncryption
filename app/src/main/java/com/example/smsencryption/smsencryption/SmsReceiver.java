@@ -14,10 +14,13 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Created by joana on 4/16/17.
@@ -166,17 +169,14 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] data = str.getBytes("UTF-8");
             ByteBuffer buffer = ByteBuffer.wrap(data);
 
-            ByteBuffer nonce = ByteBuffer.wrap(data, 0,16);
-            ByteBuffer dataToDecrypt = ByteBuffer.wrap(data, 16, buffer.array().length);
+            byte[] nonceArray = Arrays.copyOfRange(data,0,24);
 
-            nonceFromSenderB = new String(Base64.encodeBase64(nonce.array()));
-            nonceFromSenderB.replace('+','-').replace('/','_');
+            byte[] dataToDecryptArray =  Arrays.copyOfRange(data, 24, data.length);
 
+            nonceFromSenderB = new String(nonceArray);
             Constants.setPinB(nonceFromSenderB);
 
-            String stringToDecrypt = new String(Base64.encodeBase64(dataToDecrypt.array()));
-            stringToDecrypt.replace('+','-').replace('/','_');
-
+            String stringToDecrypt = new String(dataToDecryptArray);
             return decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
 
         } catch (UnsupportedEncodingException e) {
@@ -218,6 +218,8 @@ public class SmsReceiver extends BroadcastReceiver{
 
         Cipher cipher = Cipher.getInstance("AES");
         try {
+
+            SecretKeySpec s = Constants.getLongtermSharedKeySecret();
             cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
         } catch (InvalidKeyException e) {
             e.printStackTrace();
@@ -225,12 +227,10 @@ public class SmsReceiver extends BroadcastReceiver{
         }
 
         try{
-            byte[] original = cipher.doFinal(decryptData.getBytes("UTF-8"));
-
-            ByteBuffer privateKeyBuffer = ByteBuffer.wrap(original, 0,16);
-
-            privateKeyB = new String(Base64.encodeBase64(privateKeyBuffer.array()));
-            privateKeyB.replace('+','-').replace('/','_');
+            byte[] original = cipher.doFinal(Base64.decodeBase64(decryptData.getBytes("UTF-8")));
+            byte[] privateKeyBuffer = Arrays.copyOfRange(original, 0, 16);
+            privateKeyB = new String(privateKeyBuffer, "UTF-8");
+            //privateKeyB.replace('+','-').replace('/','_');
             return privateKeyB;
 
         }catch(UnsupportedEncodingException e){

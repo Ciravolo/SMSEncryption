@@ -24,7 +24,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import org.apache.commons.codec.binary.Base64;
+
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Arrays;
+
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Class to send the nonce initial seed to the user
@@ -100,6 +105,17 @@ public class SendNonceActivity extends AppCompatActivity {
         lblNonce = (TextView) findViewById(R.id.lblNonce);
         btnSendNonceStart = (Button) findViewById(R.id.btnSendNonceStart);
         btnGetNonceStart = (Button) findViewById(R.id.btnGetNonceStart);
+
+        try{
+            byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+            MessageDigest sha = MessageDigest.getInstance("SHA-1");
+            longTermSharedKeyString = sha.digest(longTermSharedKeyString);
+            longTermSharedKeyString = Arrays.copyOf(longTermSharedKeyString, 16); // use only first 128 bit
+            SecretKeySpec secretKeySpec = new SecretKeySpec(longTermSharedKeyString, "AES");
+            Constants.setLongTermSharedKeySecret(secretKeySpec);
+        } catch(Exception e){
+            e.printStackTrace();
+        }
 
         btnSendNonceStart.setOnClickListener(new View.OnClickListener(){
 
