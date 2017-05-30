@@ -44,8 +44,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:+'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:+'
-    compile 'com.facebook.react:react-native:+'
-    compile 'com.airbnb.android:react-native-maps:+'
     compile 'com.google.android.gms:play-services-base:+'
     compile 'com.google.android.gms:play-services-maps:+'
     testCompile 'junit:junit:4.12'
