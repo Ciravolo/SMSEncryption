@@ -107,7 +107,8 @@ public class SendNonceActivity extends AppCompatActivity {
         btnGetNonceStart = (Button) findViewById(R.id.btnGetNonceStart);
 
         try{
-            byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+            //byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+            byte[] longTermSharedKeyString = Constants.getLongtermSharedKeySecret().getEncoded();
             MessageDigest sha = MessageDigest.getInstance("SHA-1");
             longTermSharedKeyString = sha.digest(longTermSharedKeyString);
             longTermSharedKeyString = Arrays.copyOf(longTermSharedKeyString, 16); // use only first 128 bit

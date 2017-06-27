@@ -14,14 +14,18 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class Constants {
 
-    public static final String LONGTERM_SHARED_KEY = "secretlongterm12";
     public static SecretKeySpec LONGTERM_SHARED_KEY_SECRET;
+
+    public static String W;
+
     public static String SESSION_KEY_A = "";
     public static String SESSION_KEY_B = "";
     public static final String PRIVATE_KEY_A = "privatekeyA12345";
     public static final String PRIVATE_KEY_B = "privatekeyB12345";
     public static String PIN_A = "";
     public static String PIN_B = "";
+
+    public static void setW(String w){ W = w;}
 
     public static void setPinA(String pin){
         PIN_A = pin;
@@ -39,6 +43,8 @@ public class Constants {
         return PIN_B;
     }
 
+    public static String getW(){ return W; }
+
     public static String getPrivateKeyB(){
         return PRIVATE_KEY_B;
     }
@@ -53,10 +59,6 @@ public class Constants {
 
     public static SecretKeySpec getLongtermSharedKeySecret(){
         return LONGTERM_SHARED_KEY_SECRET;
-    }
-
-    public static String getLongTermSharedKey(){
-        return LONGTERM_SHARED_KEY;
     }
 
     public static void setSessionKeyA(String sessionKeyA){

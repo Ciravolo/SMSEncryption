@@ -7,4 +7,8 @@
     <string name="title_activity_send_nonce">SendNonceActivity</string>
     <string name="title_activity_first_step">FirstStepActivity</string>
     <string name="title_activity_second_step">SecondStepActivity</string>
+    <string name="title_activity_generate_qrcode">GenerateQRCodeActivity</string>
+    <string name="title_activity_scan_qrcode">ScanQRCode</string>
+    <string name="title_activity_keys_exchange">KeysExchangeActivity</string>
+    <string name="title_activity_phone_book">PhoneBookActivity</string>
 </resources>

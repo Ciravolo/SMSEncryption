@@ -164,7 +164,7 @@ public class SecondStepActivity extends AppCompatActivity {
 
             //TODO: change to Base64 decoding
             byte[] stringToEncrypt = (Constants.getPrivateKeyA() + Constants.getPinB() + Constants.getPinA()).getBytes("UTF-8");
-            byte[] longTermSharedKeyString = (Constants.getLongTermSharedKey()).getBytes("UTF-8");
+            byte[] longTermSharedKeyString = Constants.getLongtermSharedKeySecret().getEncoded();
 
             try{
                 MessageDigest sha = MessageDigest.getInstance("SHA-1");

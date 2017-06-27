@@ -224,7 +224,8 @@ public class FirstStepActivity extends AppCompatActivity {
             //byte[] longTermSharedKeyString = Base64.encodeBase64(Constants.getLongTermSharedKey().getBytes());
 
             byte[] stringToEncrypt = (Constants.getPrivateKeyB() + Constants.getPinA() + Constants.getPinB()).getBytes("UTF-8");
-            byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+            //byte[] longTermSharedKeyString = Constants.getLongTermSharedKey().getBytes("UTF-8");
+            byte[] longTermSharedKeyString = Constants.getLongtermSharedKeySecret().getEncoded();
 
                 MessageDigest sha = MessageDigest.getInstance("SHA-1");
                 longTermSharedKeyString = sha.digest(longTermSharedKeyString);
