@@ -5,7 +5,10 @@ import java.security.NoSuchAlgorithmException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 /**
  *
  * Class to declare all the constants shared by the application in all activities
@@ -14,18 +17,77 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class Constants {
 
-    public static SecretKeySpec LONGTERM_SHARED_KEY_SECRET;
+    private static SecretKeySpec LONGTERM_SHARED_KEY_SECRET;
 
-    public static String W;
+    private static String W;
 
-    public static String SESSION_KEY_A = "";
-    public static String SESSION_KEY_B = "";
-    public static final String PRIVATE_KEY_A = "privatekeyA12345";
-    public static final String PRIVATE_KEY_B = "privatekeyB12345";
-    public static String PIN_A = "";
-    public static String PIN_B = "";
+    private static String SESSION_KEY_A = "";
+    private static String SESSION_KEY_B = "";
+    private static String PRIVATE_KEY_A = "privatekeyA12345";
+    private static String PRIVATE_KEY_B = "privatekeyB12345";
+
+    private static String PIN_A = "";
+    private static String PIN_B = "";
+
+    private static String myNonce = "";
+    private static String hisNonce = "";
+
+    private static PublicKey myPublicKey;
+    private static PrivateKey myPrivateKey;
+
+    private static PublicKey hisPublicKey;
+
+    private static byte[] keyForExchangeKeys;
+
+    private static String decryptionMessage;
+
+    private static int numberMessages;
+
+    public static int getNumberMessages(){
+        return numberMessages;
+    }
+
+    public static void setNumberMessages(int n){
+        numberMessages = n;
+    }
+
+    public static void setDecryptionMessage(String message){
+        decryptionMessage = message;
+    }
+
+    public String getDecryptionMessage(){
+        return decryptionMessage;
+    }
+
+    public static void setKeyForExchangeKeys(byte[] k){
+        keyForExchangeKeys = k;
+    }
 
     public static void setW(String w){ W = w;}
+
+    public static void setMyNonce(String pin){ myNonce= pin; }
+
+    public static void setHisNonce(String pin){ hisNonce = pin; }
+
+    public static void setHisPublicKey(PublicKey key){
+        hisPublicKey = key;
+    }
+
+    public static void setMyPublicKey(PublicKey key){
+        myPublicKey = key;
+    }
+
+    public static void setMyPrivateKey(PrivateKey key){
+        myPrivateKey = key;
+    }
+
+    public static byte[] getKeyForExchangeKeys(){ return keyForExchangeKeys; }
+
+    public static PublicKey getMyPublicKey() { return myPublicKey; }
+
+    public static PrivateKey getMyPrivateKey() { return myPrivateKey; }
+
+    public static PublicKey getHisPublicKey(){ return hisPublicKey; }
 
     public static void setPinA(String pin){
         PIN_A = pin;
@@ -41,6 +103,14 @@ public class Constants {
 
     public static String getPinB(){
         return PIN_B;
+    }
+
+    public static String getMyNonce(){
+        return myNonce;
+    }
+
+    public static String getHisNonce(){
+        return hisNonce;
     }
 
     public static String getW(){ return W; }

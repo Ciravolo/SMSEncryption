@@ -11,4 +11,9 @@
     <string name="title_activity_scan_qrcode">ScanQRCode</string>
     <string name="title_activity_keys_exchange">KeysExchangeActivity</string>
     <string name="title_activity_phone_book">PhoneBookActivity</string>
+    <string name="title_activity_test">test</string>
+    <string name="title_activity_hello">hello</string>
+    <string name="title_activity_add_contact">AddContact</string>
+    <string name="title_activity_qrcode_exchange">QRCodeExchange</string>
+    <string name="title_activity_insert_qrcode_manually">InsertQRCodeManually</string>
 </resources>

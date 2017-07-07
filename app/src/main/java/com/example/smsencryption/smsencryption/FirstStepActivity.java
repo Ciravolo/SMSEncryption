@@ -114,7 +114,6 @@ public class FirstStepActivity extends AppCompatActivity {
 
     String SENT = "SMS_SENT";
     String DELIVERED = "SMS_DELIVERED";
-    String STEP = "my.action.string";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

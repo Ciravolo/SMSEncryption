@@ -19,7 +19,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/MaterialTheme">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyD1HjCq07-RQ15Hgq0Jl2TzVYe7GIMj2Wo" />
@@ -27,13 +27,7 @@
         <activity
             android:name=".StartActivity"
             android:label="@string/title_activity_start"
-            android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SendNonceActivity"
             android:label="@string/title_activity_send_nonce"
@@ -50,6 +44,16 @@
             android:name=".SecondStepActivity"
             android:label="@string/title_activity_second_step"
             android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".PhoneBookActivity"
+            android:label="PhoneBookActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name=".SmsReceiver"
@@ -68,9 +72,17 @@
             android:label="@string/title_activity_keys_exchange"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".PhoneBookActivity"
-            android:label="@string/title_activity_phone_book"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:name=".AddContact"
+            android:label="@string/title_activity_add_contact"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".QRCodeExchange"
+            android:label="@string/title_activity_qrcode_exchange"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".InsertQRCodeManually"
+            android:label="@string/title_activity_insert_qrcode_manually"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>
