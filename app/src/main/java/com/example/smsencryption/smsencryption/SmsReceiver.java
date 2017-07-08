@@ -52,6 +52,7 @@ public class SmsReceiver extends BroadcastReceiver{
     private String privateKeyB="";
     private String nonceFromSenderB="";
     private ArrayList<String> multiPartMessage;
+    private String infoToDecrypt = "";
     private String raw = "";
     private boolean sessionErrorKey = false;
     private String originatingPhoneNumber="";
@@ -158,20 +159,32 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             byte[] firstPartWithoutEnc = (Constants.getHisNonce() + strMyPublicKey).getBytes("UTF-8");
 
+                                            Log.i("Step 0: My nonce:",Constants.getMyNonce());
+                                            Log.i("Step 0: His nonce:",Constants.getHisNonce());
+
                                             byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
+
+                                            String saltStr = new String(Base64.encodeBase64(salt));
+                                            saltStr.replace('+', '-').replace('/', '_');
+
+                                            Log.i("Step 0: W =", Constants.getW());
+                                            Log.i("Step 0: Salt =", saltStr);
 
                                             //byte[] keyForExchangeKeys = u.generateKeyHKDF(strSalt, Constants.getW());
                                             byte[] keyForExchangeKeys = u.deriveKey(Constants.getW(), salt, 1, 128);
 
                                             Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
+                                            //TODO: check if the key is the same that is being generated
+                                            String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
+                                            strKeyForExchange.replace('+', '-').replace('/', '_');
+
+                                            Log.i("Step 0: Key exchange:", strKeyForExchange);
+
                                             String encryptedStringFirstPart = encryptSymmetric(firstPartWithoutEnc, keyForExchangeKeys);
 
                                             String finalStringToSend = Constants.getMyNonce() + encryptedStringFirstPart + ":P:1";
-
-                                            Log.i("final String:", finalStringToSend);
-                                            Log.i("length: ", String.valueOf(finalStringToSend.length()));
-
+                                            Log.i("Step 0: finalString", finalStringToSend);
                                             //send the finalString via sms
                                             SmsManager smsManager = SmsManager.getDefault();
 
@@ -216,46 +229,71 @@ public class SmsReceiver extends BroadcastReceiver{
                                     case 1:
                                         try {
 
-                                            Constants.setNumberMessages(0);
                                             if (arr.length > 2) {
+
                                                 String[] arrSplit = arr[0].split("\\*");
-                                                Constants.setNumberMessages(Integer.parseInt(arrSplit[0]));
-                                                multiPartMessage = new ArrayList<String>(Constants.getNumberMessages());
+                                                multiPartMessage = new ArrayList<String>(Integer.parseInt(arrSplit[0]));
                                                 multiPartMessage.add(indexMultipart, arrSplit[1]);
                                                 indexMultipart++;
 
-                                                //TODO: need a counter in Constants to increment each time a new upcoming message arrives to the device
+                                                Constants.setNumberMessages(Constants.getNumberMessages()+1);
+                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage()+arrSplit[1]);
 
                                                 if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
 
-                                                    String infoToDecrypt = "";
-                                                    for (int i = 0; i < multiPartMessage.size(); i++) {
-                                                        String[] arrInfo = multiPartMessage.get(i).split("\\*");
-                                                        infoToDecrypt += infoToDecrypt + arrInfo[1];
-                                                    }
+                                                    infoToDecrypt = Constants.getDecryptionMessage();
 
                                                     if (!infoToDecrypt.isEmpty()) {
                                                         //obtain nonce from sender
-                                                        byte[] receivedBytes = infoToDecrypt.getBytes("UTF-8");
-                                                        byte[] hisNoncePart = Arrays.copyOfRange(receivedBytes, 0, 16);
+
+                                                        Log.i("text to decrypt:", Constants.getDecryptionMessage());
+
+                                                        //byte[] receivedBytes = infoToDecrypt.getBytes("UTF-8");
+                                                        byte[] receivedBytes = Base64.decodeBase64(infoToDecrypt.getBytes("UTF-8"));
+                                                        byte[] hisNoncePart = Arrays.copyOf(receivedBytes, 16);
 
                                                         String strHisNonce = new String(Base64.encodeBase64(hisNoncePart));
-                                                        strHisNonce.replace('+', '-').replace('/', '_');
 
                                                         Constants.setHisNonce(strHisNonce);
 
                                                         //Salt: calculate the hash given 2 nonces
-                                                        byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
+
+                                                        Log.i("Step 1: My nonce:",Constants.getMyNonce());
+                                                        Log.i("Step 1: His nonce:",Constants.getHisNonce());
+
+                                                        byte[] salt = generateHashFromNonces(Constants.getMyNonce(), Constants.getHisNonce());
+
+                                                        //To check if the salt is the same
+                                                        String strSalt = new String(Base64.encodeBase64(salt));
+                                                        strSalt.replace('+', '-').replace('/', '_');
 
                                                         Utils u2 = new Utils();
-                                                        byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 2, 128);
+
+                                                        Log.i("Step 1: W =", Constants.getW());
+                                                        Log.i("Step 1: Salt=", strSalt);
+
+                                                        byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 1, 128);
+
+                                                        //TODO: check if the key is the same that is being generated
+                                                        String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
+                                                        strKeyForExchange.replace('+', '-').replace('/', '_');
+
+                                                        Log.i("Step 1: Key exchange:", strKeyForExchange);
 
                                                         Constants.setKeyForExchangeKeys(keyForExchangeKeys);
+
+                                                        byte[] obtainedMyNonce = Arrays.copyOfRange(receivedBytes, 0, 16);
+
+                                                        //TODO: checking what is the value sent here for the nonce
+                                                        String obtainedNonceStr = new String(Base64.encodeBase64(obtainedMyNonce));
+                                                        obtainedNonceStr.replace('+', '-').replace('/', '_');
+
+                                                        Log.i("Step 1: obtained nonce:", obtainedNonceStr);
 
                                                         byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 16, receivedBytes.length);
                                                         String decryptedMessage = decryptSymmetric(toDecryptPart, keyForExchangeKeys);
 
-                                                        byte[] obtainedMyNonce = Arrays.copyOfRange(receivedBytes, 0, 16);
+
 
                                                         //compare my nonce with the one in the decryption
                                                         byte[] decryptedMessageInBytes = decryptedMessage.getBytes("UTF-8");
@@ -325,6 +363,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         sessionErrorKey = true;
                                                         errorReason = "Info to decrypt is null";
                                                     }
+
                                                 }
 
                                             }

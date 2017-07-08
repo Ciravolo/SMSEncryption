@@ -39,9 +39,9 @@ public class Constants {
 
     private static byte[] keyForExchangeKeys;
 
-    private static String decryptionMessage;
+    private static String decryptionMessage = "";
 
-    private static int numberMessages;
+    private static int numberMessages = 0;
 
     public static int getNumberMessages(){
         return numberMessages;
@@ -55,7 +55,7 @@ public class Constants {
         decryptionMessage = message;
     }
 
-    public String getDecryptionMessage(){
+    public static String getDecryptionMessage(){
         return decryptionMessage;
     }
 
