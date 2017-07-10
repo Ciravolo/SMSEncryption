@@ -33,10 +33,11 @@ public class Utils {
 
     public String generateNonce(){
         SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[16];
+        byte[] bytes = new byte[24];
         random.nextBytes(bytes);
         String nonceGenerated = new String(Base64.encodeBase64(bytes));
-        return  nonceGenerated.replace('+','-').replace('/','_');
+        //return  nonceGenerated.replace('+','-').replace('/','_');
+        return nonceGenerated;
     }
 
 

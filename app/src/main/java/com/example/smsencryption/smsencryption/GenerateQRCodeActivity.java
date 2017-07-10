@@ -75,7 +75,7 @@ public class GenerateQRCodeActivity extends AppCompatActivity {
         //TODO: uncomment this line to generate a QR Code of 1024 bits
         //byte[] bytes = new byte[128];
 
-        byte[] bytes = new byte[16];
+        byte[] bytes = new byte[24];
 
         random.nextBytes(bytes);
         String randomGeneratedString = new String(Base64.encodeBase64(bytes));
