@@ -11,12 +11,16 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
-import android.support.v7.app.AlertDialog;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
+
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -27,6 +31,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -154,37 +159,54 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
 
-                                            //String strMyPublicKey = new String(Base64.encodeBase64(bytesMyPublicKey));
+                                            //String strMyPublicKey = android.util.Base64.encodeToString(bytesMyPublicKey, android.util.Base64.DEFAULT);
 
-                                            String strMyPublicKey = android.util.Base64.encodeToString(bytesMyPublicKey, android.util.Base64.NO_WRAP);
-                                            //strMyPublicKey.replace('+', '-').replace('/', '_');
+                                            String strMyPublicKey = new String(Base64.encodeBase64(bytesMyPublicKey));
 
+                                            //TODO: Solution in hexadecimal: String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
+
+                                            Log.i("Step 0: Public key:", strMyPublicKey);
                                             //concat his nonce with my public key
 
-                                            byte[] firstPartWithoutEnc = (Constants.getHisNonce() + strMyPublicKey).getBytes("UTF-8");
+                                            byte[] bytesHisNonce = Constants.getHisNonce().getBytes("UTF-8");
+
+                                            //byte[] firstPartWithoutEnc = (Constants.getHisNonce() + strMyPublicKey).getBytes("UTF-8");
+
+                                            //String strBytesNonce = android.util.Base64.encodeToString(bytesHisNonce, android.util.Base64.DEFAULT);
+
+                                            String strBytesNonce = new String(Base64.encodeBase64(bytesHisNonce));
+
+                                            Log.i("Step 0: str bytes nonce", strBytesNonce);
+
+                                            byte[] firstPartWithoutEnc = new byte[bytesHisNonce.length + bytesMyPublicKey.length];
+                                            System.arraycopy(bytesHisNonce, 0, firstPartWithoutEnc, 0, bytesHisNonce.length);
+                                            System.arraycopy(bytesMyPublicKey, 0, firstPartWithoutEnc, bytesHisNonce.length, bytesMyPublicKey.length);
+
+                                            //String strFirstPartWithoutEnc = android.util.Base64.encodeToString(firstPartWithoutEnc, android.util.Base64.DEFAULT);
+                                            String strFirstPartWithoutEnc = new String(Base64.encodeBase64(firstPartWithoutEnc));
+
+                                            Log.i("Step 0: 1st part wo/enc", strFirstPartWithoutEnc);
 
                                             Log.i("Step 0: My nonce:",Constants.getMyNonce());
                                             Log.i("Step 0: His nonce:",Constants.getHisNonce());
 
                                             byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
 
-                                            String saltStr = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP);
+                                            //String saltStr = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP);
 
-                                            //String saltStr = new String(Base64.encodeBase64(salt));
-                                            //saltStr.replace('+', '-').replace('/', '_');
+                                            String saltStr = new String(Base64.encodeBase64(salt));
 
                                             Log.i("Step 0: W =", Constants.getW());
                                             Log.i("Step 0: Salt =", saltStr);
 
-                                            //byte[] keyForExchangeKeys = u.generateKeyHKDF(strSalt, Constants.getW());
                                             byte[] keyForExchangeKeys = u.deriveKey(Constants.getW(), salt, 1, 128);
 
                                             Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
                                             //String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
 
-                                            String strKeyForExchange = android.util.Base64.encodeToString(keyForExchangeKeys, android.util.Base64.NO_WRAP);
-                                            //strKeyForExchange.replace('+', '-').replace('/', '_');
+                                            //String strKeyForExchange = android.util.Base64.encodeToString(keyForExchangeKeys, android.util.Base64.NO_WRAP);
+                                            String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
 
                                             Log.i("Step 0: Key exchange:", strKeyForExchange);
 
@@ -300,27 +322,25 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
-                                                        byte[] bytesToDecrypt = strDecryption.getBytes("UTF-8");
-
                                                         byte[] decryptedMessage = decryptSymmetric(toDecryptPart, keyForExchangeKeys);
 
                                                         byte[] myNoncePart = Arrays.copyOfRange(decryptedMessage, 0, 32);
 
                                                         String myNoncePartString = new String(myNoncePart,"UTF-8");
 
-                                                        Log.i("Part 1: get my nonce:", Constants.getMyNonce());
-                                                        Log.i("Part 1: str to compare:", myNoncePartString);
-
                                                         if (Constants.getMyNonce().compareTo(myNoncePartString) == 0) {
                                                             //meaning that the message from Bob is alright and I can obtain the public key from B
 
-                                                            Log.i("enters here!!!!", "yay");
-
-
+                                                            Log.i("Part 1:", "nonce is equals to the first part of the decrypted part");
                                                             byte[] publicKeyPart = Arrays.copyOfRange(decryptedMessage, 32, decryptedMessage.length);
                                                             // I create the public key for B and I set it
 
-                                                            PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyPart));
+                                                           // ByteArrayInputStream bis = new ByteArrayInputStream(publicKeyPart);
+                                                           // ObjectInput in = new ObjectInputStream(bis);
+
+                                                            byte[] publicKeyPartEncoded = android.util.Base64.encode(publicKeyPart, android.util.Base64.DEFAULT);
+
+                                                            PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyPartEncoded));
                                                             Constants.setHisPublicKey(hisPublicKey);
 
                                                             //generate my keys
@@ -504,120 +524,6 @@ public class SmsReceiver extends BroadcastReceiver{
                             }
                         }
 
-
-
-/*
-                    switch(stepProtocol){
-
-                        case 1:
-                            try {
-
-                                obtainPrivateKeyFromSenderFirstStep(encryptedMessage);
-                                byte[] xorSessionKey = xor(Constants.getPrivateKeyA().getBytes("UTF-8") , privateKeyB.getBytes("UTF-8"));
-                                Constants.setSessionKeyA(new String(Base64.encodeBase64(xorSessionKey)));
-                                if (Constants.getSessionKeyA().equals("")){
-                                    //couldn't create the session key for A. send alert
-                                    sessionErrorKey = true;
-                                }
-
-                            } catch (IllegalBlockSizeException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (NoSuchPaddingException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (NoSuchAlgorithmException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (BadPaddingException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (UnsupportedEncodingException e){
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            }
-                            break;
-                        case 2:
-                            try {
-                                obtainPrivateKeyFromSenderSecondStep(encryptedMessage);
-                                byte[] xorSessionKey = xor(privateKeyA.getBytes("UTF-8") , Constants.getPrivateKeyB().getBytes("UTF-8"));
-                                String s_test = new String(Base64.encodeBase64(xorSessionKey));
-                                String test_2 = s_test;
-                                Constants.setSessionKeyB(s_test);
-
-                            } catch (NoSuchAlgorithmException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (BadPaddingException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (IllegalBlockSizeException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (NoSuchPaddingException e) {
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            } catch (UnsupportedEncodingException e){
-                                sessionErrorKey = true;
-                                e.printStackTrace();
-                            }
-                            break;
-                        case 3:
-                            //when the session has already been established, both parts should have the same session key set.
-                            if (Constants.getSessionKeyA().equals("") && Constants.getSessionKeyB().equals("")){
-                                //means everything is blank and session key hasnt been established: error
-                                sessionErrorKey = true;
-                            }else{
-                                String key = Constants.getSessionKeyA().equals("") ? Constants.getSessionKeyB(): Constants.getSessionKeyA();
-
-                                byte[] keyArray = new byte[0];
-
-                                try {
-                                    keyArray = key.getBytes("UTF-8");
-                                } catch (UnsupportedEncodingException e) {
-                                    e.printStackTrace();
-                                }
-                                MessageDigest sha = null;
-                                try {
-                                    sha = MessageDigest.getInstance("SHA-1");
-                                } catch (NoSuchAlgorithmException e) {
-                                    e.printStackTrace();
-                                }
-                                keyArray = sha.digest(keyArray);
-                                keyArray = Arrays.copyOf(keyArray, 16); // use only first 128 bit
-                                SecretKeySpec secretKeySpec = new SecretKeySpec(keyArray, "AES");
-
-                                String plaintext = null;
-                                try {
-                                    plaintext = decryptPrivateMessageWithSessionKey(secretKeySpec,encryptedMessage);
-                                    String test = plaintext;
-                                    String tt = test;
-
-                                } catch (IllegalBlockSizeException e) {
-                                    e.printStackTrace();
-                                    sessionErrorKey = true;
-                                } catch (NoSuchPaddingException e) {
-                                    e.printStackTrace();
-                                    sessionErrorKey = true;
-                                } catch (NoSuchAlgorithmException e) {
-                                    e.printStackTrace();
-                                    sessionErrorKey = true;
-                                } catch (BadPaddingException e) {
-                                    e.printStackTrace();
-                                    sessionErrorKey = true;
-                                }
-
-                                if (plaintext!=null){
-                                    Toast.makeText(context, "Decrypted message: "+ plaintext, Toast.LENGTH_SHORT).show();
-                                } else {
-                                    sessionErrorKey = true;
-                                }
-                            }
-
-                            break;
-
-                    }
-*/
                         if (sessionErrorKey) {
                             Toast.makeText(context, errorReason, Toast.LENGTH_SHORT).show();
                         }
@@ -636,9 +542,9 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] arr = Constants.getW().getBytes("UTF-8");
             byte[] arr16 = Arrays.copyOfRange(arr, 0, 16);
 
-            String encArr = android.util.Base64.encodeToString(arr16, android.util.Base64.NO_WRAP);
+            String encArr = android.util.Base64.encodeToString(message, android.util.Base64.NO_WRAP);
 
-            Log.i("Step 1: AT ENCRYPTION:", encArr);
+            Log.i("Step 1: before enc:", encArr);
             IvParameterSpec iv = new IvParameterSpec(arr16);
 
             SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, key.length, "AES");
@@ -652,8 +558,7 @@ public class SmsReceiver extends BroadcastReceiver{
             String strEncrypted = android.util.Base64.encodeToString(encrypted,
                     android.util.Base64.NO_WRAP);
 
-            //String strEncrypted = new String(Base64.encodeBase64(encrypted));
-            //strEncrypted.replace('+','-').replace('/','_');
+            Log.i("Step 1: After enc:", strEncrypted);
 
             return strEncrypted;
         }
@@ -691,16 +596,16 @@ public class SmsReceiver extends BroadcastReceiver{
 
         IvParameterSpec iv = new IvParameterSpec(arr16);
 
-        String encArr = android.util.Base64.encodeToString(arr16, android.util.Base64.NO_WRAP);
-
-        Log.i("Step 1: AT DECRYPTION:", encArr);
-
         SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, key.length, "AES");
 
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv);
 
         byte[] original = cipher.doFinal(message);
+
+        String strOriginal = android.util.Base64.encodeToString(original, android.util.Base64.NO_WRAP);
+        Log.i("Step 1: After dec:", strOriginal);
+
         return original;
 
     }

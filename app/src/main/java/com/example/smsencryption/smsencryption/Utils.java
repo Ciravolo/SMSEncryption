@@ -98,6 +98,14 @@ public class Utils {
         Map<String, Object> keys = new HashMap<String,Object>();
         keys.put("private", privateKey);
         keys.put("public", publicKey);
+
+        String strPrivate = android.util.Base64.encodeToString(privateKey.getEncoded(), android.util.Base64.NO_WRAP);
+        String strPublic = android.util.Base64.encodeToString(publicKey.getEncoded(), android.util.Base64.NO_WRAP);
+
+        //print the obtained key pair
+        Log.i("private key:", strPrivate);
+        Log.i("public key:", strPublic);
+
         return keys;
     }
 
