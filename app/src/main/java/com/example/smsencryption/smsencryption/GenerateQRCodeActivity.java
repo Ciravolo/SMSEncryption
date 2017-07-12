@@ -20,6 +20,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -75,10 +76,10 @@ public class GenerateQRCodeActivity extends AppCompatActivity {
         //TODO: uncomment this line to generate a QR Code of 1024 bits
         //byte[] bytes = new byte[128];
 
-        byte[] bytes = new byte[24];
+        byte[] bytes = new byte[16];
 
         random.nextBytes(bytes);
-        String randomGeneratedString = new String(Base64.encodeBase64(bytes));
+        String randomGeneratedString = new String(Hex.encodeHex(bytes));
         randomGeneratedString.replace('+','-').replace('/','_');
         return randomGeneratedString;
     }

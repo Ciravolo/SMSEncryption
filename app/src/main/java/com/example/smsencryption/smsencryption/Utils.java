@@ -3,6 +3,7 @@ package com.example.smsencryption.smsencryption;
 import android.util.Log;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -29,14 +30,11 @@ import java.security.PublicKey;
 public class Utils {
 
 
-    private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
-
     public String generateNonce(){
         SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[24];
+        byte[] bytes = new byte[16];
         random.nextBytes(bytes);
-        String nonceGenerated = new String(Base64.encodeBase64(bytes));
-        //return  nonceGenerated.replace('+','-').replace('/','_');
+        String nonceGenerated = new String(Hex.encodeHex(bytes));
         return nonceGenerated;
     }
 
@@ -77,17 +75,6 @@ public class Utils {
         return struct;
     }
 
-/*
-    public static byte[] generateKeyHKDF(String salt, String key)
-            throws SignatureException, NoSuchAlgorithmException, InvalidKeyException
-    {
-        SecretKeySpec signingKey = new SecretKeySpec(key.getBytes(), HMAC_SHA1_ALGORITHM);
-        Mac mac = Mac.getInstance(HMAC_SHA1_ALGORITHM);
-        mac.init(signingKey);
-        return mac.doFinal(salt.getBytes());
-    }
-*/
-
     public static Map<String, Object> getRSAKeys() throws Exception{
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -99,8 +86,8 @@ public class Utils {
         keys.put("private", privateKey);
         keys.put("public", publicKey);
 
-        String strPrivate = android.util.Base64.encodeToString(privateKey.getEncoded(), android.util.Base64.NO_WRAP);
-        String strPublic = android.util.Base64.encodeToString(publicKey.getEncoded(), android.util.Base64.NO_WRAP);
+        String strPrivate = new String(Hex.encodeHex(privateKey.getEncoded()));
+        String strPublic = new String(Hex.encodeHex(publicKey.getEncoded()));
 
         //print the obtained key pair
         Log.i("private key:", strPrivate);

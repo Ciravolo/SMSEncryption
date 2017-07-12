@@ -159,22 +159,14 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
 
-                                            //String strMyPublicKey = android.util.Base64.encodeToString(bytesMyPublicKey, android.util.Base64.DEFAULT);
-
-                                            String strMyPublicKey = new String(Base64.encodeBase64(bytesMyPublicKey));
-
+                                            String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
                                             //TODO: Solution in hexadecimal: String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
 
                                             Log.i("Step 0: Public key:", strMyPublicKey);
-                                            //concat his nonce with my public key
 
                                             byte[] bytesHisNonce = Constants.getHisNonce().getBytes("UTF-8");
 
-                                            //byte[] firstPartWithoutEnc = (Constants.getHisNonce() + strMyPublicKey).getBytes("UTF-8");
-
-                                            //String strBytesNonce = android.util.Base64.encodeToString(bytesHisNonce, android.util.Base64.DEFAULT);
-
-                                            String strBytesNonce = new String(Base64.encodeBase64(bytesHisNonce));
+                                            String strBytesNonce = new String(Hex.encodeHex(bytesHisNonce));
 
                                             Log.i("Step 0: str bytes nonce", strBytesNonce);
 
@@ -182,19 +174,15 @@ public class SmsReceiver extends BroadcastReceiver{
                                             System.arraycopy(bytesHisNonce, 0, firstPartWithoutEnc, 0, bytesHisNonce.length);
                                             System.arraycopy(bytesMyPublicKey, 0, firstPartWithoutEnc, bytesHisNonce.length, bytesMyPublicKey.length);
 
-                                            //String strFirstPartWithoutEnc = android.util.Base64.encodeToString(firstPartWithoutEnc, android.util.Base64.DEFAULT);
-                                            String strFirstPartWithoutEnc = new String(Base64.encodeBase64(firstPartWithoutEnc));
+                                            String strFirstPartWithoutEnc = new String(Hex.encodeHex(firstPartWithoutEnc));
 
                                             Log.i("Step 0: 1st part wo/enc", strFirstPartWithoutEnc);
-
                                             Log.i("Step 0: My nonce:",Constants.getMyNonce());
                                             Log.i("Step 0: His nonce:",Constants.getHisNonce());
 
                                             byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
 
-                                            //String saltStr = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP);
-
-                                            String saltStr = new String(Base64.encodeBase64(salt));
+                                            String saltStr = new String(Hex.encodeHex(salt));
 
                                             Log.i("Step 0: W =", Constants.getW());
                                             Log.i("Step 0: Salt =", saltStr);
@@ -203,10 +191,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
-                                            //String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
-
-                                            //String strKeyForExchange = android.util.Base64.encodeToString(keyForExchangeKeys, android.util.Base64.NO_WRAP);
-                                            String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
+                                            String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
 
                                             Log.i("Step 0: Key exchange:", strKeyForExchange);
 
@@ -214,7 +199,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             String finalStringToSend = Constants.getMyNonce() + encryptedStringFirstPart + ":P:1";
                                             Log.i("Step 0: finalString", finalStringToSend);
-                                            //send the finalString via sms
+
                                             SmsManager smsManager = SmsManager.getDefault();
 
                                             PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
@@ -222,7 +207,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                             context.getApplicationContext().registerReceiver(
                                                     new SmsReceiver(),
                                                     new IntentFilter(SENT_SMS_FLAG));
-
 
                                             if (finalStringToSend.length()>160){
 
@@ -240,9 +224,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                             parts.get(k), sentIntent, null);
                                                 }
-
-                                                //ArrayList<String> parts = smsManager.divideMessage(finalStringToSend);
-                                                //smsManager.sendMultipartTextMessage(originatingPhoneNumber, null, parts, null, null);
                                             }
                                             else{
                                                 smsManager.sendTextMessage(originatingPhoneNumber, null,
@@ -274,36 +255,23 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         Log.i("text to decrypt:", Constants.getDecryptionMessage());
 
-                                                        //byte[] receivedBytes = infoToDecrypt.getBytes("UTF-8");
-                                                        byte[] receivedBytes = Base64.decodeBase64(infoToDecrypt.getBytes("UTF-8"));
-                                                        byte[] hisNoncePart = Arrays.copyOfRange(receivedBytes, 0, 24);
+                                                        byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
+
+                                                        byte[] hisNoncePart = Arrays.copyOfRange(receivedBytes, 0, 16);
 
                                                         Log.i("Step 1: length:", String.valueOf(receivedBytes.length));
 
-                                                        byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 24, receivedBytes.length);
+                                                        byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 16, receivedBytes.length);
 
-                                                        String strHisNonce = android.util.Base64.encodeToString(hisNoncePart, android.util.Base64.NO_WRAP);
+                                                        String strHisNonce = new String(Hex.encodeHex(hisNoncePart));
 
-                                                        //String strHisNonce = new String(Base64.encodeBase64(hisNoncePart));
-
-                                                        //String strDecryption = new String (Base64.encodeBase64(toDecryptPart));
-
-                                                        String strDecryption = android.util.Base64.encodeToString(toDecryptPart, android.util.Base64.NO_WRAP);
+                                                        String strDecryption = new String(Hex.encodeHex(toDecryptPart));
 
                                                         Constants.setHisNonce(strHisNonce);
 
-                                                        Log.i("Step 1: My nonce:",Constants.getMyNonce());
-                                                        Log.i("Step 1: His nonce:",Constants.getHisNonce());
-                                                        Log.i("Step 1: decrypt part:", strDecryption);
-
                                                         byte[] salt = generateHashFromNonces(Constants.getMyNonce(), Constants.getHisNonce());
 
-                                                        //To check if the salt is the same
-
-                                                        String strSalt = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP);
-
-                                                        //String strSalt = new String(Base64.encodeBase64(salt));
-                                                        //strSalt.replace('+', '-').replace('/', '_');
+                                                        String strSalt = new String(Hex.encodeHex(salt));
 
                                                         Utils u2 = new Utils();
 
@@ -312,11 +280,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 1, 128);
 
-
-                                                        //String strKeyForExchange = new String(Base64.encodeBase64(keyForExchangeKeys));
-                                                        //strKeyForExchange.replace('+', '-').replace('/', '_');
-
-                                                        String strKeyForExchange = android.util.Base64.encodeToString(keyForExchangeKeys, android.util.Base64.NO_WRAP);
+                                                        String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
 
                                                         Log.i("Step 1: Key exchange:", strKeyForExchange);
 
@@ -326,21 +290,20 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         byte[] myNoncePart = Arrays.copyOfRange(decryptedMessage, 0, 32);
 
-                                                        String myNoncePartString = new String(myNoncePart,"UTF-8");
+                                                        String myNoncePartString = new String(Hex.encodeHex(myNoncePart));
 
-                                                        if (Constants.getMyNonce().compareTo(myNoncePartString) == 0) {
+                                                        Log.i("HERE:  myNoncePartStr:", myNoncePartString);
+                                                        Log.i("HERE: getMyNonce:", Constants.getMyNonce());
+
+                                                        String myNonceHex = new String(Hex.encodeHex(Constants.getMyNonce().getBytes("UTF-8")));
+
+                                                        if (myNoncePartString.compareTo(myNonceHex) == 0) {
                                                             //meaning that the message from Bob is alright and I can obtain the public key from B
 
                                                             Log.i("Part 1:", "nonce is equals to the first part of the decrypted part");
                                                             byte[] publicKeyPart = Arrays.copyOfRange(decryptedMessage, 32, decryptedMessage.length);
-                                                            // I create the public key for B and I set it
 
-                                                           // ByteArrayInputStream bis = new ByteArrayInputStream(publicKeyPart);
-                                                           // ObjectInput in = new ObjectInputStream(bis);
-
-                                                            byte[] publicKeyPartEncoded = android.util.Base64.encode(publicKeyPart, android.util.Base64.DEFAULT);
-
-                                                            PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyPartEncoded));
+                                                            PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyPart));
                                                             Constants.setHisPublicKey(hisPublicKey);
 
                                                             //generate my keys
@@ -357,17 +320,16 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
 
-                                                            String strMyPublicKey = android.util.Base64.encodeToString(bytesMyPublicKey, android.util.Base64.NO_WRAP);
-                                                            //String strMyPublicKey = new String(Base64.encodeBase64(bytesMyPublicKey));
-                                                            //strMyPublicKey.replace('+', '-').replace('/', '_');
+                                                            String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
+
+                                                            Log.i("SEND: mypubkey:", strMyPublicKey);
 
                                                             byte[] bytesHisPublicKey = Constants.getHisPublicKey().getEncoded();
 
-                                                            String strHisPublicKey = android.util.Base64.encodeToString(bytesHisPublicKey, android.util.Base64.NO_WRAP);
-                                                            //String strHisPublicKey = new String(Base64.encodeBase64(bytesHisPublicKey));
-                                                            //strHisPublicKey.replace('+', '-').replace('/', '_');
-
+                                                            String strHisPublicKey = new String(Hex.encodeHex(bytesHisPublicKey));
                                                             //concat all the strings to form the final to encrypt message
+
+                                                            Log.i("SEND: hispubkey:", strHisPublicKey);
 
                                                             String messageToEncrypt = Constants.getHisNonce() + strMyPublicKey + strHisPublicKey;
 
@@ -407,7 +369,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                             sessionErrorKey = true;
                                             errorReason = e.getMessage();
                                         }
-                                        //longTermSharedKeyString = Arrays.copyOf(longTermSharedKeyString, 16);
 
                                         break;
                                     case 2:
@@ -415,24 +376,27 @@ public class SmsReceiver extends BroadcastReceiver{
                                             //decrypt the message received with the already set key for exchange
                                             byte[] receivedBytes = receivedMessage.getBytes("UTF-8");
 
-                                            String strReceived = android.util.Base64.encodeToString(receivedBytes, android.util.Base64.NO_WRAP);
+                                            //String strReceived = android.util.Base64.encodeToString(receivedBytes, android.util.Base64.NO_WRAP);
+
+                                            String strReceived = new String(Hex.encodeHex(receivedBytes));
+
+                                            Log.i("Step 2: msg received:", strReceived);
 
                                             byte[] decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
 
                                             //byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
-                                            byte[] noncePart = Arrays.copyOfRange(decryptedMessage, 0, 16);
+                                            byte[] noncePart = Arrays.copyOfRange(decryptedMessage, 0, 32);
 
                                             //need to compare that the noncePart corresponds to my nonce
                                             //String noncePartReceived = new String(Base64.encodeBase64(noncePart));
 
-                                            String noncePartReceived = android.util.Base64.encodeToString(noncePart, android.util.Base64.NO_WRAP);
-
+                                            String noncePartReceived = new String(Hex.encodeHex(noncePart));
                                             //noncePartReceived.replace('+', '-').replace('/', '_');
 
                                             if (noncePartReceived.compareTo(Constants.getMyNonce()) == 0) {
 
-                                                byte[] publicKeyA = Arrays.copyOfRange(decryptedMessage, 16, 2064);
-                                                byte[] publicKeyB = Arrays.copyOfRange(decryptedMessage, 2064, 4112);
+                                                byte[] publicKeyA = Arrays.copyOfRange(decryptedMessage, 16, 2080);
+                                                byte[] publicKeyB = Arrays.copyOfRange(decryptedMessage, 2080, 4128);
 
                                                 //from byte[] to public key and compare again if it corresponds to my already set key
 
@@ -483,7 +447,10 @@ public class SmsReceiver extends BroadcastReceiver{
                                             //decrypt the message received with the already set key for exchange
                                             byte[] receivedBytes = receivedMessage.getBytes("UTF-8");
 
-                                            String strReceived = android.util.Base64.encodeToString(receivedBytes, android.util.Base64.NO_WRAP);
+                                           // String strReceived = android.util.Base64.encodeToString(receivedBytes, android.util.Base64.NO_WRAP);
+                                            String strReceived = new String(Hex.encodeHex(receivedBytes));
+
+                                            Log.i("Step 3: msg received:", strReceived);
 
                                             byte[] decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
                                             //byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
@@ -542,7 +509,8 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] arr = Constants.getW().getBytes("UTF-8");
             byte[] arr16 = Arrays.copyOfRange(arr, 0, 16);
 
-            String encArr = android.util.Base64.encodeToString(message, android.util.Base64.NO_WRAP);
+            //String encArr = android.util.Base64.encodeToString(message, android.util.Base64.NO_WRAP);
+            String encArr = new String(Hex.encodeHex(message));
 
             Log.i("Step 1: before enc:", encArr);
             IvParameterSpec iv = new IvParameterSpec(arr16);
@@ -555,8 +523,9 @@ public class SmsReceiver extends BroadcastReceiver{
 
             byte[] encrypted = cipher.doFinal(message);
 
-            String strEncrypted = android.util.Base64.encodeToString(encrypted,
-                    android.util.Base64.NO_WRAP);
+           // String strEncrypted = android.util.Base64.encodeToString(encrypted,
+            //        android.util.Base64.NO_WRAP);
+            String strEncrypted = new String(Hex.encodeHex(encrypted));
 
             Log.i("Step 1: After enc:", strEncrypted);
 
@@ -603,37 +572,11 @@ public class SmsReceiver extends BroadcastReceiver{
 
         byte[] original = cipher.doFinal(message);
 
-        String strOriginal = android.util.Base64.encodeToString(original, android.util.Base64.NO_WRAP);
+        //String strOriginal = android.util.Base64.encodeToString(original, android.util.Base64.NO_WRAP);
+        String strOriginal = new String(Hex.encodeHex(original));
         Log.i("Step 1: After dec:", strOriginal);
 
         return original;
-
-    }
-
-
-    private String decryptPrivateMessageWithSessionKey(SecretKeySpec key, String messageToDecrypt)
-            throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
-
-        Cipher cipher = Cipher.getInstance("AES");
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, key);
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        try{
-            byte[] original = cipher.doFinal(Base64.decodeBase64(messageToDecrypt.getBytes("UTF-8")));
-            byte[] oo = original;
-
-            String decryptedMessage = new String(original, "UTF-8");
-            String dd = decryptedMessage;
-            
-            return decryptedMessage;
-        }catch(UnsupportedEncodingException e){
-            e.printStackTrace();
-            return null;
-        }
 
     }
 
@@ -671,70 +614,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
     private String base64Encode(byte[] bytes) {
         return Base64.encodeBase64String(bytes).replaceAll("\\s", "");
-
-    }
-
-    public void obtainPrivateKeyFromSenderFirstStep(String str)
-            throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
-
-        try {
-            byte[] data = str.getBytes("UTF-8");
-            ByteBuffer buffer = ByteBuffer.wrap(data);
-
-            byte[] nonceArray = Arrays.copyOfRange(data,0,24);
-            byte[] dataToDecryptArray =  Arrays.copyOfRange(data, 24, data.length);
-
-            nonceFromSenderB = new String(nonceArray);
-            Constants.setPinB(nonceFromSenderB);
-
-            String stringToDecrypt = new String(dataToDecryptArray);
-            decryptPrivateKeyFromSenderFirstStep(stringToDecrypt);
-
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    public void obtainPrivateKeyFromSenderSecondStep(String str)
-            throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
-
-        Cipher cipher = Cipher.getInstance("AES");
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        try{
-            byte[] original = cipher.doFinal(Base64.decodeBase64(str.getBytes("UTF-8")));
-
-            byte[] privateKeyBuffer = Arrays.copyOfRange(original, 0, 16);
-            privateKeyA = new String(privateKeyBuffer, "UTF-8");
-
-        }catch(UnsupportedEncodingException e){
-            e.printStackTrace();
-        }
-    }
-
-
-    public void decryptPrivateKeyFromSenderFirstStep(String decryptData)
-            throws BadPaddingException, IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException {
-
-        Cipher cipher = Cipher.getInstance("AES");
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, Constants.getLongtermSharedKeySecret());
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        try{
-            byte[] original = cipher.doFinal(Base64.decodeBase64(decryptData.getBytes("UTF-8")));
-            byte[] privateKeyBuffer = Arrays.copyOfRange(original, 0, 16);
-            privateKeyB = new String(privateKeyBuffer, "UTF-8");
-        }catch(UnsupportedEncodingException e){
-            e.printStackTrace();
-        }
 
     }
 
