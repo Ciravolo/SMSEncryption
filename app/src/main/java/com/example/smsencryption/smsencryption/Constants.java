@@ -17,7 +17,7 @@ import java.security.PublicKey;
 
 public class Constants {
 
-    private static SecretKeySpec LONGTERM_SHARED_KEY_SECRET;
+    private static SecretKey LONGTERM_SHARED_KEY_SECRET;
 
     private static String W;
 
@@ -123,11 +123,11 @@ public class Constants {
         return PRIVATE_KEY_A;
     }
 
-    public static void setLongTermSharedKeySecret(SecretKeySpec s){
+    public static void setLongTermSharedKeySecret(SecretKey s){
         LONGTERM_SHARED_KEY_SECRET = s;
     }
 
-    public static SecretKeySpec getLongtermSharedKeySecret(){
+    public static SecretKey getLongtermSharedKeySecret(){
         return LONGTERM_SHARED_KEY_SECRET;
     }
 

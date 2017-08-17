@@ -42,6 +42,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -136,21 +137,19 @@ public class SmsReceiver extends BroadcastReceiver{
                                 //run the protocol for public key exchange
                                 switch (stepProtocol) {
                                     case 0:
-
-                                        //I'm receiving the nonce so I set it
                                         Constants.setHisNonce(receivedMessage);
-
-                                        //Now I generate my nonce
                                         Utils u = new Utils();
                                         String myNonce = u.generateNonce();
-
-                                        //I set my nonce
                                         Constants.setMyNonce(myNonce);
+
+                                        Log.i("My nonce:", Constants.getMyNonce());
+                                        Log.i("His nonce:", Constants.getHisNonce());
 
                                         try {
                                             //I get a pair of keys for RSA to set my public key/private key
                                             Map<String, Object> keys = u.getRSAKeys();
 
+                                            //Generation of public and private keys on Bob
                                             PrivateKey privateKey = (PrivateKey) keys.get("private");
                                             PublicKey publicKey = (PublicKey) keys.get("public");
 
@@ -158,47 +157,23 @@ public class SmsReceiver extends BroadcastReceiver{
                                             Constants.setMyPublicKey(publicKey);
 
                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
-
-                                            String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
-                                            //TODO: Solution in hexadecimal: String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
-
-                                            Log.i("Step 0: Public key:", strMyPublicKey);
-
-                                            byte[] bytesHisNonce = Constants.getHisNonce().getBytes("UTF-8");
-
-                                            String strBytesNonce = new String(Hex.encodeHex(bytesHisNonce));
-
-                                            Log.i("Step 0: str bytes nonce", strBytesNonce);
+                                            byte[] bytesHisNonce = Hex.decodeHex(Constants.getHisNonce().toCharArray());
 
                                             byte[] firstPartWithoutEnc = new byte[bytesHisNonce.length + bytesMyPublicKey.length];
                                             System.arraycopy(bytesHisNonce, 0, firstPartWithoutEnc, 0, bytesHisNonce.length);
                                             System.arraycopy(bytesMyPublicKey, 0, firstPartWithoutEnc, bytesHisNonce.length, bytesMyPublicKey.length);
 
-                                            String strFirstPartWithoutEnc = new String(Hex.encodeHex(firstPartWithoutEnc));
-
-                                            Log.i("Step 0: 1st part wo/enc", strFirstPartWithoutEnc);
-                                            Log.i("Step 0: My nonce:",Constants.getMyNonce());
-                                            Log.i("Step 0: His nonce:",Constants.getHisNonce());
-
                                             byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
-
-                                            String saltStr = new String(Hex.encodeHex(salt));
-
-                                            Log.i("Step 0: W =", Constants.getW());
-                                            Log.i("Step 0: Salt =", saltStr);
-
                                             byte[] keyForExchangeKeys = u.deriveKey(Constants.getW(), salt, 1, 128);
 
                                             Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
                                             String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
-
-                                            Log.i("Step 0: Key exchange:", strKeyForExchange);
+                                            Log.i("KEY ON ENC:::", strKeyForExchange);
 
                                             String encryptedStringFirstPart = encryptSymmetric(firstPartWithoutEnc, keyForExchangeKeys);
 
                                             String finalStringToSend = Constants.getMyNonce() + encryptedStringFirstPart + ":P:1";
-                                            Log.i("Step 0: finalString", finalStringToSend);
 
                                             SmsManager smsManager = SmsManager.getDefault();
 
@@ -216,10 +191,12 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     parts.set(i, parts.get(i)+":P:1");
                                                 }
 
+                                                //At the beginning sending an indicator for the quantity of msgs to be sent
+                                                //(e.g. if there are 4 messages: 4*---- message---)
                                                 for (int j=0; j< parts.size(); j++){
                                                     parts.set(j, parts.size()+"*"+parts.get(j));
                                                 }
-
+                                                //sending the messages to the recipient: Alice
                                                 for (int k=0; k<parts.size(); k++){
                                                     smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                             parts.get(k), sentIntent, null);
@@ -239,6 +216,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                     case 1:
                                         try {
 
+                                            //When alice receives the encrypted data first step
                                             if (arr.length > 2) {
 
                                                 String[] arrSplit = arr[0].split("\\*");
@@ -251,58 +229,51 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     infoToDecrypt = Constants.getDecryptionMessage();
 
                                                     if (!infoToDecrypt.isEmpty()) {
-                                                        //obtain nonce from sender
-
-                                                        Log.i("text to decrypt:", Constants.getDecryptionMessage());
 
                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
 
+                                                        //byte[] receivedBytes = infoToDecrypt.getBytes("UTF-8");
                                                         byte[] hisNoncePart = Arrays.copyOfRange(receivedBytes, 0, 16);
-
-                                                        Log.i("Step 1: length:", String.valueOf(receivedBytes.length));
-
                                                         byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 16, receivedBytes.length);
 
                                                         String strHisNonce = new String(Hex.encodeHex(hisNoncePart));
 
-                                                        String strDecryption = new String(Hex.encodeHex(toDecryptPart));
+                                                        Log.i("His Nonce:", strHisNonce);
+                                                        Log.i("My Nonce:", Constants.getMyNonce());
 
                                                         Constants.setHisNonce(strHisNonce);
 
                                                         byte[] salt = generateHashFromNonces(Constants.getMyNonce(), Constants.getHisNonce());
 
-                                                        String strSalt = new String(Hex.encodeHex(salt));
-
                                                         Utils u2 = new Utils();
-
-                                                        Log.i("Step 1: W =", Constants.getW());
-                                                        Log.i("Step 1: Salt=", strSalt);
 
                                                         byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 1, 128);
 
-                                                        String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
+                                                        String strDecKey = new String(Hex.encodeHex(keyForExchangeKeys));
+                                                        Log.i("KEY ON DEC:::", strDecKey);
 
-                                                        Log.i("Step 1: Key exchange:", strKeyForExchange);
+                                                        String strToDecrypt = new String(Hex.encodeHex(toDecryptPart));
+                                                        Log.i("string to dec::", strToDecrypt);
 
                                                         Constants.setKeyForExchangeKeys(keyForExchangeKeys);
+                                                        String decryptedMessage = decryptSymmetric(toDecryptPart, keyForExchangeKeys);
 
-                                                        byte[] decryptedMessage = decryptSymmetric(toDecryptPart, keyForExchangeKeys);
+                                                        //obtaining bytes from this string
 
-                                                        byte[] myNoncePart = Arrays.copyOfRange(decryptedMessage, 0, 32);
+                                                        byte[] decryptedBytes =  Hex.decodeHex(decryptedMessage.toCharArray());
+                                                        byte[] myNoncePart = Arrays.copyOfRange(decryptedBytes, 0, 16);
 
                                                         String myNoncePartString = new String(Hex.encodeHex(myNoncePart));
 
-                                                        Log.i("HERE:  myNoncePartStr:", myNoncePartString);
-                                                        Log.i("HERE: getMyNonce:", Constants.getMyNonce());
+                                                        Log.i("myNoncePartString:", myNoncePartString);
 
-                                                        String myNonceHex = new String(Hex.encodeHex(Constants.getMyNonce().getBytes("UTF-8")));
-
-                                                        if (myNoncePartString.compareTo(myNonceHex) == 0) {
+                                                        if (myNoncePartString.compareTo(Constants.getMyNonce()) == 0) {
                                                             //meaning that the message from Bob is alright and I can obtain the public key from B
 
-                                                            Log.i("Part 1:", "nonce is equals to the first part of the decrypted part");
-                                                            byte[] publicKeyPart = Arrays.copyOfRange(decryptedMessage, 32, decryptedMessage.length);
+                                                            //Log.i("Part 1:", "nonce is equals to the first part of the decrypted part");
+                                                            byte[] publicKeyPart = Arrays.copyOfRange(decryptedBytes, 32, decryptedBytes.length);
 
+                                                            //TODO: yessss ahora funca hasta aqui
                                                             PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyPart));
                                                             Constants.setHisPublicKey(hisPublicKey);
 
@@ -322,19 +293,26 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
 
-                                                            Log.i("SEND: mypubkey:", strMyPublicKey);
+                                                            //Log.i("SEND: mypubkey:", strMyPublicKey);
 
                                                             byte[] bytesHisPublicKey = Constants.getHisPublicKey().getEncoded();
 
                                                             String strHisPublicKey = new String(Hex.encodeHex(bytesHisPublicKey));
                                                             //concat all the strings to form the final to encrypt message
 
-                                                            Log.i("SEND: hispubkey:", strHisPublicKey);
+                                                            //Log.i("SEND: hispubkey:", strHisPublicKey);
 
                                                             String messageToEncrypt = Constants.getHisNonce() + strMyPublicKey + strHisPublicKey;
 
                                                             byte[] messageBytesToEncrypt = messageToEncrypt.getBytes("UTF-8");
                                                             //encrypt this string
+
+                                                            //TODO: Calculate length without the encryption
+
+                                                            String message = new String(Hex.encodeHex(messageBytesToEncrypt));
+
+                                                            //Log.i("SENDING: ", message);
+
                                                             String finalMessage = encryptSymmetric(messageBytesToEncrypt, keyForExchangeKeys);
 
                                                             finalMessage = finalMessage + ":P:2";
@@ -342,6 +320,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             //send the message to receiver
                                                             SmsManager smsManager = SmsManager.getDefault();
 
+                                                            /*
                                                             PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
                                                                     intent, 0);
                                                             context.getApplicationContext().registerReceiver(
@@ -350,7 +329,28 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                                     finalMessage, sentIntent, null);
 
+                                                            if (finalMessage.length()>160){
 
+                                                                ArrayList<String> parts = u2.divideMessageManyParts(finalMessage);
+
+                                                                for (int i=0; i< parts.size()-1; i++){
+                                                                    parts.set(i, parts.get(i)+":P:2");
+                                                                }
+
+                                                                for (int j=0; j< parts.size(); j++){
+                                                                    parts.set(j, parts.size()+"*"+parts.get(j));
+                                                                }
+
+                                                                for (int k=0; k<parts.size(); k++){
+                                                                    smsManager.sendTextMessage(originatingPhoneNumber, null,
+                                                                            parts.get(k), sentIntent, null);
+                                                                }
+                                                            }
+                                                            else{
+                                                                smsManager.sendTextMessage(originatingPhoneNumber, null,
+                                                                        finalMessage, sentIntent, null);
+                                                            }
+                                                            */
                                                         } else {
                                                             sessionErrorKey = true;
                                                             errorReason = "Message received in second step has no correspondence to the protocol";
@@ -382,10 +382,12 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             Log.i("Step 2: msg received:", strReceived);
 
-                                            byte[] decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
+                                            String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
+
+                                            byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
 
                                             //byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
-                                            byte[] noncePart = Arrays.copyOfRange(decryptedMessage, 0, 32);
+                                            byte[] noncePart = Arrays.copyOfRange(decryptedBytes, 0, 32);
 
                                             //need to compare that the noncePart corresponds to my nonce
                                             //String noncePartReceived = new String(Base64.encodeBase64(noncePart));
@@ -395,8 +397,8 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             if (noncePartReceived.compareTo(Constants.getMyNonce()) == 0) {
 
-                                                byte[] publicKeyA = Arrays.copyOfRange(decryptedMessage, 16, 2080);
-                                                byte[] publicKeyB = Arrays.copyOfRange(decryptedMessage, 2080, 4128);
+                                                byte[] publicKeyA = Arrays.copyOfRange(decryptedBytes, 16, 2080);
+                                                byte[] publicKeyB = Arrays.copyOfRange(decryptedBytes, 2080, 4128);
 
                                                 //from byte[] to public key and compare again if it corresponds to my already set key
 
@@ -452,9 +454,9 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             Log.i("Step 3: msg received:", strReceived);
 
-                                            byte[] decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
-                                            //byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
-                                            PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedMessage));
+                                            String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
+                                            byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
+                                            PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
 
                                             //I need to compare if it corresponds to my own public key
                                             if (receivedPublicKey == Constants.getMyPublicKey()) {
@@ -504,27 +506,17 @@ public class SmsReceiver extends BroadcastReceiver{
 
     public String encryptSymmetric(byte[] message, byte[] key) {
 
+        byte[] encrypted = null;
+
         try{
-
-            byte[] arr = Constants.getW().getBytes("UTF-8");
-            byte[] arr16 = Arrays.copyOfRange(arr, 0, 16);
-
-            //String encArr = android.util.Base64.encodeToString(message, android.util.Base64.NO_WRAP);
-            String encArr = new String(Hex.encodeHex(message));
-
-            Log.i("Step 1: before enc:", encArr);
-            IvParameterSpec iv = new IvParameterSpec(arr16);
-
-            SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, key.length, "AES");
+            SecretKey secretKeySpec = new SecretKeySpec(key, "AES");
             Constants.setLongTermSharedKeySecret(secretKeySpec);
 
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, iv);
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
 
-            byte[] encrypted = cipher.doFinal(message);
+            encrypted = cipher.doFinal(message);
 
-           // String strEncrypted = android.util.Base64.encodeToString(encrypted,
-            //        android.util.Base64.NO_WRAP);
             String strEncrypted = new String(Hex.encodeHex(encrypted));
 
             Log.i("Step 1: After enc:", strEncrypted);
@@ -540,44 +532,42 @@ public class SmsReceiver extends BroadcastReceiver{
         } catch (IllegalBlockSizeException e) {
             e.printStackTrace();
             return null;
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
-            return null;
         } catch (InvalidKeyException e) {
             e.printStackTrace();
             return null;
-        }catch (InvalidAlgorithmParameterException e){
-            e.printStackTrace();
-            return null;
-        } catch (UnsupportedEncodingException e){
+        } catch (NoSuchPaddingException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public byte[] decryptSymmetric(byte[] message, byte[] key) throws
-            NoSuchAlgorithmException, NoSuchPaddingException,
-            IllegalBlockSizeException, BadPaddingException, InvalidKeyException,
-            InvalidAlgorithmParameterException, UnsupportedEncodingException {
+    public String decryptSymmetric(byte[] message, byte[] key)  {
 
-        byte[] arr = Constants.getW().getBytes("UTF-8");
-        byte[] arr16 = Arrays.copyOfRange(arr, 0, 16);
+        byte[] clearText = null;
 
-        IvParameterSpec iv = new IvParameterSpec(arr16);
+        try {
+            String strEncrypted = new String(Hex.encodeHex(message));
+            Log.i("DEC:B4 DEC:", strEncrypted);
 
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, key.length, "AES");
+            SecretKey secretKeySpec = new SecretKeySpec(key, "AES");
+            Constants.setLongTermSharedKeySecret(secretKeySpec);
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv);
+            byte[] keyBytes = secretKeySpec.getEncoded();
+            String strKeyBytes = new String(Hex.encodeHex(keyBytes));
 
-        byte[] original = cipher.doFinal(message);
+            Log.i("DEC: KEY BYTES STR:", strKeyBytes);
 
-        //String strOriginal = android.util.Base64.encodeToString(original, android.util.Base64.NO_WRAP);
-        String strOriginal = new String(Hex.encodeHex(original));
-        Log.i("Step 1: After dec:", strOriginal);
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 
-        return original;
+            clearText = cipher.doFinal(message);
 
+            return new String(Hex.encodeHex(clearText));
+        }
+        catch( Exception e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private static byte[] xor(byte[] a, byte[] b){
