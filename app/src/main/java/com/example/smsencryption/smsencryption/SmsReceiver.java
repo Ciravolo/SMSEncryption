@@ -179,6 +179,11 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                             String finalStringToSend = Constants.getMyNonce() + encryptedStringFirstPart + ":P:1";
 
+
+                                            //clear the variables to be reused on next transmission
+                                            Constants.setNumberMessages(0);
+                                            Constants.setDecryptionMessage("");
+
                                             SmsManager smsManager = SmsManager.getDefault();
 
                                             PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
@@ -305,6 +310,11 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             finalMessage = finalMessage + ":P:2";
                                                             Log.i("Final msg for step 2:", finalMessage);
 
+
+                                                            //clear the variables to be reused on next transmission
+                                                            Constants.setNumberMessages(0);
+                                                            Constants.setDecryptionMessage("");
+
                                                             //send the message to receiver
                                                             SmsManager smsManager = SmsManager.getDefault();
 
@@ -422,6 +432,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 Log.i("before sending step 3:", messageToBeSent);
 
+                                                                //clear the variables to be reused on next transmission
+                                                                Constants.setNumberMessages(0);
+                                                                Constants.setDecryptionMessage("");
+
                                                                 Utils u3 = new Utils();
                                                                 //send the message to receiver
                                                                 SmsManager smsManager = SmsManager.getDefault();
@@ -479,29 +493,54 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                     case 3:
                                         try {
-                                            byte[] receivedBytes = receivedMessage.getBytes("UTF-8");
-                                            String strReceived = new String(Hex.encodeHex(receivedBytes));
-                                            Log.i("Step 3: msg received:", strReceived);
+                                            if (arr.length > 2) {
+                                                Log.i("info1:", "here at least!");
 
-                                            String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
-                                            byte[] decryptedBytes = decryptedMessage.getBytes("UTF-8");
-                                            PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
+                                                String[] arrSplit = arr[0].split("\\*");
+                                                Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
 
-                                            //I need to compare if it corresponds to my own public key
-                                            if (receivedPublicKey == Constants.getMyPublicKey()) {
-                                                //success, the protocol has been established
-                                                SmsManager smsManager = SmsManager.getDefault();
+                                                Constants.setNumberMessages(Constants.getNumberMessages() + 1);
+                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                Log.i("info2:", "here at least!");
+                                                if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
 
-                                                PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
-                                                        intent, 0);
-                                                context.getApplicationContext().registerReceiver(
-                                                        new SmsReceiver(),
-                                                        new IntentFilter(SENT_SMS_FLAG));
-                                                smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                        "Success! Protocol has been set", sentIntent, null);
-                                            } else {
-                                                errorReason = "Step 3: Public key sent does not correspond to the receivers public key";
-                                                sessionErrorKey = true;
+                                                    infoToDecrypt = Constants.getDecryptionMessage();
+
+                                                    Log.i("info3:", "here at least!");
+                                                    if (!infoToDecrypt.isEmpty()) {
+
+                                                        byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
+
+                                                        String strReceived = new String(Hex.encodeHex(receivedBytes));
+                                                        Log.i("Step 3: msg received:", strReceived);
+
+                                                        String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
+
+                                                        Log.i("decrypted msg step 3:", decryptedMessage);
+
+                                                        byte[] decryptedBytes = Hex.decodeHex(decryptedMessage.toCharArray());
+                                                        PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
+
+                                                        //I need to compare if it corresponds to my own public key
+                                                        if (receivedPublicKey == Constants.getMyPublicKey()) {
+                                                            //success, the protocol has been established
+                                                            SmsManager smsManager = SmsManager.getDefault();
+
+                                                            PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
+                                                                    intent, 0);
+                                                            context.getApplicationContext().registerReceiver(
+                                                                    new SmsReceiver(),
+                                                                    new IntentFilter(SENT_SMS_FLAG));
+                                                            smsManager.sendTextMessage(originatingPhoneNumber, null,
+                                                                    "Success! Protocol has been set", sentIntent, null);
+                                                        } else {
+                                                            errorReason = "Step 3: Public key sent does not correspond to the receivers public key";
+                                                            sessionErrorKey = true;
+                                                        }
+
+                                                    }
+
+                                                }
                                             }
 
                                         } catch (Exception e) {
