@@ -393,27 +393,37 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             Log.i("info:", "nonce part received corresponds!");
 
-                                                            byte[] publicKeyA = Arrays.copyOfRange(decryptedBytes, 16, 1233);
-                                                            byte[] publicKeyB = Arrays.copyOfRange(decryptedBytes, 1233, 4128);
+                                                            byte[] publicKeyA = Arrays.copyOfRange(decryptedBytes, 16, 310);
+                                                            byte[] publicKeyB = Arrays.copyOfRange(decryptedBytes, 310, 604);
+
+                                                            //TODO: check if the obtained pub keys correspond
+
+                                                            String strPubKeyA = new String(Hex.encodeHex(publicKeyA));
+                                                            String strPubKeyB = new String(Hex.encodeHex(publicKeyB));
+
+                                                            //todo: print it out
+                                                            Log.i("Pub key A obtained:", strPubKeyA);
+                                                            Log.i("Pub key B obtained:", strPubKeyB);
+
+                                                            String myPubKey = new String(Hex.encodeHex(Constants.getMyPublicKey().getEncoded()));
 
                                                             //from byte[] to public key and compare again if it corresponds to my already set key
 
                                                             PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyB));
 
-                                                            if (myPublicKey == Constants.getMyPublicKey()) {
-
-                                                                Log.i("info:", "public keys correspond! preparing to send message 3");
+                                                            if (strPubKeyB.compareTo(myPubKey)==0) {
 
                                                                 PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyA));
                                                                 Constants.setHisPublicKey(hisPublicKey);
-
-                                                                //now send message for confirmation of the protocol
 
                                                                 String messageToBeSent = encryptSymmetric(Constants.getHisPublicKey().getEncoded(), Constants.getKeyForExchangeKeys());
 
                                                                 messageToBeSent = messageToBeSent + ":P:3";
 
-                                                                //send the final confirmation message to receiver
+                                                                Log.i("before sending step 3:", messageToBeSent);
+
+                                                                Utils u3 = new Utils();
+                                                                //send the message to receiver
                                                                 SmsManager smsManager = SmsManager.getDefault();
 
                                                                 PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
@@ -421,8 +431,27 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 context.getApplicationContext().registerReceiver(
                                                                         new SmsReceiver(),
                                                                         new IntentFilter(SENT_SMS_FLAG));
-                                                                smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                        messageToBeSent, sentIntent, null);
+
+                                                                if (messageToBeSent.length() > 160) {
+
+                                                                    ArrayList<String> parts = u3.divideMessageManyParts(messageToBeSent);
+
+                                                                    for (int i = 0; i < parts.size() - 1; i++) {
+                                                                        parts.set(i, parts.get(i) + ":P:3");
+                                                                    }
+
+                                                                    for (int j = 0; j < parts.size(); j++) {
+                                                                        parts.set(j, parts.size() + "*" + parts.get(j));
+                                                                    }
+
+                                                                    for (int k = 0; k < parts.size(); k++) {
+                                                                        smsManager.sendTextMessage(originatingPhoneNumber, null,
+                                                                                parts.get(k), sentIntent, null);
+                                                                    }
+                                                                } else {
+                                                                    smsManager.sendTextMessage(originatingPhoneNumber, null,
+                                                                            messageToBeSent, sentIntent, null);
+                                                                }
 
 
                                                             } else {
