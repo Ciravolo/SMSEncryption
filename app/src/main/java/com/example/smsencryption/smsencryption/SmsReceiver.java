@@ -417,10 +417,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             String myPubKey = new String(Hex.encodeHex(Constants.getMyPublicKey().getEncoded()));
 
-                                                            //from byte[] to public key and compare again if it corresponds to my already set key
-
-                                                            PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyB));
-
                                                             if (strPubKeyB.compareTo(myPubKey)==0) {
 
                                                                 PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyA));
@@ -494,19 +490,17 @@ public class SmsReceiver extends BroadcastReceiver{
                                     case 3:
                                         try {
                                             if (arr.length > 2) {
-                                                Log.i("info1:", "here at least!");
 
                                                 String[] arrSplit = arr[0].split("\\*");
                                                 Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
                                                 Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
-                                                Log.i("info2:", "here at least!");
+
                                                 if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
 
                                                     infoToDecrypt = Constants.getDecryptionMessage();
 
-                                                    Log.i("info3:", "here at least!");
                                                     if (!infoToDecrypt.isEmpty()) {
 
                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
@@ -519,10 +513,20 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         Log.i("decrypted msg step 3:", decryptedMessage);
 
                                                         byte[] decryptedBytes = Hex.decodeHex(decryptedMessage.toCharArray());
-                                                        PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
+                                                        String pubKeyStr = new String(Hex.encodeHex(decryptedBytes));
+                                                        //PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
+                                                        Log.i("pub key dec:", pubKeyStr);
+                                                        //check my public key stored
+                                                        PublicKey pk = Constants.getMyPublicKey();
+                                                        byte[] pkencoded = pk.getEncoded();
+                                                        String pubKeyEncoded = new String(Hex.encodeHex(pkencoded));
+
+                                                        Log.i("my pubkey: ", pubKeyEncoded);
 
                                                         //I need to compare if it corresponds to my own public key
-                                                        if (receivedPublicKey == Constants.getMyPublicKey()) {
+                                                        if (pubKeyStr.compareTo(pubKeyEncoded)==0) {
+
+                                                            Log.i("i:","Success! the protocol has been established");
                                                             //success, the protocol has been established
                                                             SmsManager smsManager = SmsManager.getDefault();
 
@@ -532,7 +536,10 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     new SmsReceiver(),
                                                                     new IntentFilter(SENT_SMS_FLAG));
                                                             smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                    "Success! Protocol has been set", sentIntent, null);
+                                                                    "Success! Protocol has been established", sentIntent, null);
+
+                                                            Toast.makeText(context, "Success!, the protocol has been established", Toast.LENGTH_SHORT).show();
+
                                                         } else {
                                                             errorReason = "Step 3: Public key sent does not correspond to the receivers public key";
                                                             sessionErrorKey = true;
