@@ -4,10 +4,13 @@ import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
@@ -15,6 +18,9 @@ import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.example.smsencryption.smsencryption.database.SMSEncryptionContract;
+import com.example.smsencryption.smsencryption.database.SMSEncryptionDbHelper;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
@@ -301,6 +307,78 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String messageToEncrypt = Constants.getHisNonce() + strMyPublicKey + strHisPublicKey;
                                                             byte[] messageBytesToEncrypt = Hex.decodeHex(messageToEncrypt.toCharArray());
 
+                                                            //TODO: alice saves the key for bob before sending the P:2 message
+                                                            SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+
+                                                            SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                                                            // Define a projection that specifies which columns from the database
+                                                            // you will actually use after this query.
+
+                                                            String[] projection = {
+                                                                    SMSEncryptionContract.Directory._ID,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                                                            };
+
+                                                            // Filter results WHERE "title" = 'My Title'
+                                                            String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                            String[] selectionArgs = { originatingPhoneNumber };
+
+                                                            Cursor cursor = db.query(
+                                                                    SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                    projection,                               // The columns to return
+                                                                    selection,                                // The columns for the WHERE clause
+                                                                    selectionArgs,                            // The values for the WHERE clause
+                                                                    null,                                     // don't group the rows
+                                                                    null,                                     // don't filter by row groups
+                                                                    null                                      // The sort order
+                                                            );
+
+                                                            List itemIds = new ArrayList<>();
+                                                            while(cursor.moveToNext()) {
+                                                                long itemId = cursor.getLong(
+                                                                        cursor.getColumnIndexOrThrow(SMSEncryptionContract.Directory._ID));
+                                                                itemIds.add(itemId);
+                                                            }
+                                                            cursor.close();
+
+                                                            SQLiteDatabase dbw = mDbHelper.getWritableDatabase();
+                                                            ContentValues values = new ContentValues();
+
+                                                            if (itemIds.size()==0){
+
+                                                                Log.i("I:", "it is not saved in the database, first time to record it.");
+                                                                //todo: It is not saved in the db so save the key of Bob
+                                                                //save values on the database
+
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
+
+                                                                //Insert the row
+                                                                long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
+
+                                                                Log.i("I:", "Inserted row with id:"+newRowId);
+                                                            }else{
+
+                                                                Log.i("I:", "it is already saved on the database. need to update it");
+
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
+
+                                                                // Which row to update, based on the title
+                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                                String[] selectionArgsUpdate = { originatingPhoneNumber };
+
+                                                                int count = db.update(
+                                                                        SMSEncryptionContract.Directory.TABLE_NAME,
+                                                                        values,
+                                                                        selectionUpdate,
+                                                                        selectionArgsUpdate);
+
+                                                                Log.i("I:", "Rows updated:"+count);
+
+                                                            }
+
                                                             //TODO: Calculate length without the encryption
 
                                                             String message = new String(Hex.encodeHex(messageBytesToEncrypt));
@@ -344,6 +422,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                                         finalMessage, sentIntent, null);
                                                             }
+
 
 
                                                         } else {
@@ -411,7 +490,78 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String strPubKeyA = new String(Hex.encodeHex(publicKeyA));
                                                             String strPubKeyB = new String(Hex.encodeHex(publicKeyB));
 
-                                                            //todo: print it out
+
+                                                            //TODO: check if it has been recorded previously
+
+                                                            SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+
+                                                            SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                                                            // Define a projection that specifies which columns from the database
+                                                            // you will actually use after this query.
+
+                                                            String[] projection = {
+                                                                    SMSEncryptionContract.Directory._ID,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                                                            };
+
+                                                            // Filter results WHERE "title" = 'My Title'
+                                                            String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                            String[] selectionArgs = { originatingPhoneNumber };
+
+                                                            Cursor cursor = db.query(
+                                                                    SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                    projection,                               // The columns to return
+                                                                    selection,                                // The columns for the WHERE clause
+                                                                    selectionArgs,                            // The values for the WHERE clause
+                                                                    null,                                     // don't group the rows
+                                                                    null,                                     // don't filter by row groups
+                                                                    null                                      // The sort order
+                                                            );
+
+                                                            List itemIds = new ArrayList<>();
+                                                            while(cursor.moveToNext()) {
+                                                                long itemId = cursor.getLong(
+                                                                        cursor.getColumnIndexOrThrow(SMSEncryptionContract.Directory._ID));
+                                                                itemIds.add(itemId);
+                                                            }
+                                                            cursor.close();
+
+
+                                                            SQLiteDatabase dbw = mDbHelper.getWritableDatabase();
+
+                                                            //save values on the database
+                                                            ContentValues values = new ContentValues();
+
+                                                            if (itemIds.size()==0){
+                                                                //todo: It is not saved in the db so save the key of Alice
+                                                                Log.i("I:", "it is not saved in the database, first time to record it.");
+
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
+
+                                                                //Insert the row
+                                                                long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
+                                                                Log.i("I:", "Value inserted with id:"+newRowId);
+                                                            }else{
+
+                                                                Log.i("I:", "it is already saved on the database. need to update it");
+
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
+
+                                                                // Which row to update, based on the title
+                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                                String[] selectionArgsUpdate = { originatingPhoneNumber };
+
+                                                                int count = db.update(
+                                                                        SMSEncryptionContract.Directory.TABLE_NAME,
+                                                                        values,
+                                                                        selectionUpdate,
+                                                                        selectionArgsUpdate);
+                                                                Log.i("I:", "Rows updated:"+count);
+                                                            }
+
                                                             Log.i("Pub key A obtained:", strPubKeyA);
                                                             Log.i("Pub key B obtained:", strPubKeyB);
 
@@ -462,6 +612,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                                             messageToBeSent, sentIntent, null);
                                                                 }
+
 
 
                                                             } else {
