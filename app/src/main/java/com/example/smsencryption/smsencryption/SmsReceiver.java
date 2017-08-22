@@ -65,21 +65,13 @@ import static android.content.Context.ACTIVITY_SERVICE;
 
 public class SmsReceiver extends BroadcastReceiver{
 
-    private String privateKeyA="";
-    private String privateKeyB="";
-    private String nonceFromSenderB="";
-    private ArrayList<String> multiPartMessage;
     private String infoToDecrypt = "";
     private String raw = "";
     private boolean sessionErrorKey = false;
     private String originatingPhoneNumber="";
-    private int indexMultipart=0;
-
     private String errorReason="";
 
     String SENT_SMS_FLAG = "SENT_SMS_FLAG";
-    String SENT = "SMS_SENT";
-    String DELIVERED = "SMS_DELIVERED";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -155,15 +147,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                         Log.i("His nonce:", Constants.getHisNonce());
 
                                         try {
-                                            //I get a pair of keys for RSA to set my public key/private key
-                                            Map<String, Object> keys = u.getRSAKeys();
-
-                                            //Generation of public and private keys on Bob
-                                            PrivateKey privateKey = (PrivateKey) keys.get("private");
-                                            PublicKey publicKey = (PublicKey) keys.get("public");
-
-                                            Constants.setMyPrivateKey(privateKey);
-                                            Constants.setMyPublicKey(publicKey);
 
                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
 
@@ -318,7 +301,9 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
+
                                                             };
 
                                                             // Filter results WHERE "title" = 'My Title'
@@ -354,6 +339,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY, "");
 
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
@@ -422,8 +408,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                                         finalMessage, sentIntent, null);
                                                             }
-
-
 
                                                         } else {
                                                             sessionErrorKey = true;
@@ -503,7 +487,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
                                                             };
 
                                                             // Filter results WHERE "title" = 'My Title'
@@ -540,6 +525,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY, "");
 
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
