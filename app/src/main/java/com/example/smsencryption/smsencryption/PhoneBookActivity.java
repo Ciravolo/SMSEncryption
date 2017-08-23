@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
@@ -21,9 +22,14 @@ import com.github.fafaldo.fabtoolbar.widget.FABToolbarLayout;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
+import java.io.File;
+import java.io.IOException;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +39,7 @@ public class PhoneBookActivity extends AppCompatActivity {
 
     private ListView list;
     private FABToolbarLayout morph;
+    private String PRIVATE_KEY_FILE="privatekey.txt";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,8 +111,7 @@ public class PhoneBookActivity extends AppCompatActivity {
             String[] projection = {
                     SMSEncryptionContract.Directory._ID,
                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
-                    SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
+                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
             };
 
             // Filter results WHERE "title" = 'My Title'
@@ -154,8 +160,27 @@ public class PhoneBookActivity extends AppCompatActivity {
                 byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
                 String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
 
-                byte[] bytesMyPrivateKey = Constants.getMyPrivateKey().getEncoded();
-                String strMyPrivateKey = new String(Hex.encodeHex(bytesMyPrivateKey));
+                //byte[] bytesMyPrivateKey = Constants.getMyPrivateKey().getEncoded();
+                //String strMyPrivateKey = new String(Hex.encodeHex(bytesMyPrivateKey));
+
+                //TODO: save the private key generated in the device
+                //Here the private key is going to be stored in the device
+                try{
+                    KeyFactory fact = KeyFactory.getInstance("RSA");
+                    RSAPrivateKeySpec priv = fact.getKeySpec(privateKey,
+                            RSAPrivateKeySpec.class);
+
+                    File newfile = new File(Environment.getExternalStorageDirectory() + File.separator + PRIVATE_KEY_FILE);
+                    u.saveToFile(newfile,
+                            priv.getModulus(), priv.getPrivateExponent());
+                }
+                catch(NoSuchAlgorithmException e){
+                    e.printStackTrace();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }catch(InvalidKeySpecException e){
+                    e.printStackTrace();
+                }
 
                 //TODO: record on the database my own public key
 
@@ -167,7 +192,6 @@ public class PhoneBookActivity extends AppCompatActivity {
 
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, myPhoneNumber);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strMyPublicKey);
-                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY, strMyPrivateKey);
 
                 //Insert the row
                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
@@ -190,33 +214,22 @@ public class PhoneBookActivity extends AppCompatActivity {
                 );
 
                 List itemPubKey = new ArrayList<>();
-                List itemPrivKey = new ArrayList<>();
 
                 while(cursor2.moveToNext()) {
                     String pubKey = cursor2.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
-                    String privKey = cursor2.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY));
+                    Log.i("i:", "public key from database:"+pubKey);
                     itemPubKey.add(pubKey);
-                    itemPrivKey.add(privKey);
                 }
                 cursor2.close();
 
-                //as each of the lists have just one single Item for each user (public and private that was saved before)
-                //I obtain it from there and set them
+                //public key is obtained from the database but my private key is on the device saved on a file
 
-                String privateKeyStr = itemPrivKey.get(0).toString();
                 String publicKeyStr = itemPubKey.get(0).toString();
 
                 Log.i("Pub key already set:", publicKeyStr);
-                Log.i("Priv key already set:", privateKeyStr);
 
                 try {
                     byte[] bytesPublicKey = Hex.decodeHex(publicKeyStr.toCharArray());
-                    byte[] bytesPrivateKey = Hex.decodeHex(privateKeyStr.toCharArray());
-
-                    PrivateKey myPrivateKey = KeyFactory.getInstance("RSA").generatePrivate(new X509EncodedKeySpec(bytesPrivateKey));
-                    Constants.setMyPrivateKey(myPrivateKey);
-
-                    Log.i("i:", "private key is set from the database correctly");
 
                     PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesPublicKey));
                     Constants.setMyPublicKey(myPublicKey);
@@ -228,7 +241,21 @@ public class PhoneBookActivity extends AppCompatActivity {
                     Log.i("i:","cannot load the keys from the database");
                 }
 
+                //to set the private I do the following: read the file on the device
+                Utils u2 = new Utils();
 
+                try {
+                    File fileToRead = new File(Environment.getExternalStorageDirectory() + File.separator + PRIVATE_KEY_FILE);
+                    PrivateKey privKeyFromDevice = u2.readPrivateKey(fileToRead);
+
+                    if (privKeyFromDevice!=null){
+                        //set in my current execution
+                        Constants.setMyPrivateKey(privKeyFromDevice);
+                    }
+
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
         }
 

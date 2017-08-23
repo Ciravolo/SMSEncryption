@@ -13,6 +13,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.Telephony;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
@@ -27,6 +28,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
@@ -35,12 +37,15 @@ import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +77,7 @@ public class SmsReceiver extends BroadcastReceiver{
     private String errorReason="";
 
     String SENT_SMS_FLAG = "SENT_SMS_FLAG";
+    private String PRIVATE_KEY_FILE = "privatekey.txt";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -275,6 +281,17 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             PublicKey myPublicKey = (PublicKey) keys.get("public");
 
                                                             Constants.setMyPrivateKey(myPrivateKey);
+
+                                                            //Here the private key is going to be stored in the device
+                                                            KeyFactory fact = KeyFactory.getInstance("RSA");
+                                                            RSAPrivateKeySpec priv = fact.getKeySpec(myPrivateKey,
+                                                                    RSAPrivateKeySpec.class);
+
+                                                            File newfile = new File(Environment.getExternalStorageDirectory() + File.separator + PRIVATE_KEY_FILE);
+
+                                                            u2.saveToFile(newfile,
+                                                                    priv.getModulus(), priv.getPrivateExponent());
+
                                                             Constants.setMyPublicKey(myPublicKey);
 
                                                             //prepare the message to be sent in the 3rd step of the Public key exchange protocol
@@ -301,9 +318,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
-
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
                                                             };
 
                                                             // Filter results WHERE "title" = 'My Title'
@@ -339,7 +354,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
-                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY, "");
 
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
@@ -487,8 +501,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
-                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
                                                             };
 
                                                             // Filter results WHERE "title" = 'My Title'
@@ -525,7 +538,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
-                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY, "");
 
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);

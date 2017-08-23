@@ -5,10 +5,23 @@ import android.util.Log;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.SignatureException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,6 +107,41 @@ public class Utils {
         Log.i("public key:", strPublic);
 
         return keys;
+    }
+
+    //To save a private key on device
+    public static void saveToFile(File fileObj, BigInteger mod, BigInteger exp)
+    throws IOException {
+            ObjectOutputStream oout = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(fileObj)));
+            try {
+                oout.writeObject(mod);
+                oout.writeObject(exp);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                oout.close();
+            }
+
+    }
+
+    public static PrivateKey readPrivateKey(File fileObj) throws IOException {
+        InputStream in = new FileInputStream(fileObj);
+        ObjectInputStream oin =
+                new ObjectInputStream(new BufferedInputStream(in));
+        try {
+            BigInteger m = (BigInteger) oin.readObject();
+            BigInteger e = (BigInteger) oin.readObject();
+            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
+            KeyFactory fact = KeyFactory.getInstance("RSA");
+            PrivateKey privKey = fact.generatePrivate(keySpec);
+            return privKey;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            oin.close();
+        }
     }
 
 }
