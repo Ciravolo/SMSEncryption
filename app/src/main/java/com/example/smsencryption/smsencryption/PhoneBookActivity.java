@@ -18,10 +18,13 @@ import com.example.smsencryption.smsencryption.database.SMSEncryptionContract;
 import com.example.smsencryption.smsencryption.database.SMSEncryptionDbHelper;
 import com.github.fafaldo.fabtoolbar.widget.FABToolbarLayout;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
+import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -174,16 +177,7 @@ public class PhoneBookActivity extends AppCompatActivity {
             }
             else{
 
-                String[] projection2 = {
-                        SMSEncryptionContract.Directory._ID,
-                        SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                        SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
-                        SMSEncryptionContract.Directory.COLUMN_NAME_PRIVATEKEY
-                };
-
-                // Filter results WHERE "title" = 'My Title'
-                String selection2 = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
-                String[] selectionArgs2 = { myPhoneNumber };
+                Log.i("i:","use keys already created before");
 
                 Cursor cursor2 = db.query(
                         SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
@@ -204,10 +198,36 @@ public class PhoneBookActivity extends AppCompatActivity {
                     itemPubKey.add(pubKey);
                     itemPrivKey.add(privKey);
                 }
-                cursor.close();
+                cursor2.close();
 
                 //as each of the lists have just one single Item for each user (public and private that was saved before)
                 //I obtain it from there and set them
+
+                String privateKeyStr = itemPrivKey.get(0).toString();
+                String publicKeyStr = itemPubKey.get(0).toString();
+
+                Log.i("Pub key already set:", publicKeyStr);
+                Log.i("Priv key already set:", privateKeyStr);
+
+                try {
+                    byte[] bytesPublicKey = Hex.decodeHex(publicKeyStr.toCharArray());
+                    byte[] bytesPrivateKey = Hex.decodeHex(privateKeyStr.toCharArray());
+
+                    PrivateKey myPrivateKey = KeyFactory.getInstance("RSA").generatePrivate(new X509EncodedKeySpec(bytesPrivateKey));
+                    Constants.setMyPrivateKey(myPrivateKey);
+
+                    Log.i("i:", "private key is set from the database correctly");
+
+                    PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesPublicKey));
+                    Constants.setMyPublicKey(myPublicKey);
+
+                    Log.i("i:", "public key is set from the database correctly");
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.i("i:","cannot load the keys from the database");
+                }
+
 
             }
         }
