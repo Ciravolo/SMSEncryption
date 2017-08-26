@@ -43,6 +43,10 @@ public class Constants {
 
     private static int numberMessages = 0;
 
+    private static String hisContactName = "";
+
+    private static String myContactName = "";
+
     public static int getNumberMessages(){
         return numberMessages;
     }
@@ -146,4 +150,16 @@ public class Constants {
     public static String getSessionKeyB(){
         return SESSION_KEY_B;
     }
+
+    public static void setHisContactName(String str){
+        hisContactName = str;
+    }
+
+    public static void setMyContactName(String str){
+        myContactName = str;
+    }
+
+    public static String getHisContactName(){ return hisContactName; }
+
+    public static String getMyContactName(){ return myContactName; }
 }

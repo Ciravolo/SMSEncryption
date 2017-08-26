@@ -73,8 +73,9 @@ public class SmsReceiver extends BroadcastReceiver{
     private String infoToDecrypt = "";
     private String raw = "";
     private boolean sessionErrorKey = false;
-    private String originatingPhoneNumber="";
-    private String errorReason="";
+    private String originatingPhoneNumber = "";
+    private String contactName = "default";
+    private String errorReason = "";
 
     String SENT_SMS_FLAG = "SENT_SMS_FLAG";
     private String PRIVATE_KEY_FILE = "privatekey.txt";
@@ -88,6 +89,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
         String action = intent.getAction();
         Log.i("Receiver", "Broadcast received: " + action);
+
+        if (action.equals("my.action.string")){
+            Constants.setHisContactName(intent.getExtras().getString("contactname"));
+        }
 
         if (bundle != null) {
             //---retrieve the SMS message received---
@@ -110,6 +115,8 @@ public class SmsReceiver extends BroadcastReceiver{
 
                         raw += msgs[i].getMessageBody();
                         originatingPhoneNumber = msgs[i].getOriginatingAddress();
+
+                        Log.i("I: ", contactName);
 
                         str += "SMS from " + msgs[i].getOriginatingAddress();
                         str += " :";
@@ -317,6 +324,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
                                                             };
@@ -352,6 +360,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 //todo: It is not saved in the db so save the key of Bob
                                                                 //save values on the database
 
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, Constants.getHisContactName());
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
 
@@ -500,6 +509,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             String[] projection = {
                                                                     SMSEncryptionContract.Directory._ID,
+                                                                    SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
                                                                     SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
                                                             };
@@ -536,6 +546,9 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 //todo: It is not saved in the db so save the key of Alice
                                                                 Log.i("I:", "it is not saved in the database, first time to record it.");
 
+                                                                Log.i("I: contactName:", Constants.getHisContactName());
+
+                                                                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, Constants.getHisContactName());
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
 
@@ -685,9 +698,16 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     new SmsReceiver(),
                                                                     new IntentFilter(SENT_SMS_FLAG));
                                                             smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                    "Success! Protocol has been established", sentIntent, null);
+                                                                    "Success! Protocol has been established:E", sentIntent, null);
 
                                                             Toast.makeText(context, "Success!, the protocol has been established", Toast.LENGTH_SHORT).show();
+
+                                                            //return to the phonebook list and show the new added contact
+
+                                                            Intent i = new Intent(context, PhoneBookActivity.class);
+                                                            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                            context.startActivity(i);
+
 
                                                         } else {
                                                             errorReason = "Step 3: Public key sent does not correspond to the receivers public key";
@@ -709,6 +729,13 @@ public class SmsReceiver extends BroadcastReceiver{
 
                             if (protocolId.compareTo("E") == 0) {
                                     //run protocol from the message exchange encryption
+
+                                //return to the phonebook list and show the new added contact
+
+                                Intent i = new Intent(context, PhoneBookActivity.class);
+                                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                context.startActivity(i);
+
                                     } else {
                                     if (protocolId.compareTo("W") == 0) {
                                         //received the initial W
@@ -794,42 +821,6 @@ public class SmsReceiver extends BroadcastReceiver{
         }
     }
 
-    private static byte[] xor(byte[] a, byte[] b){
-        byte[] result = new byte[Math.min(a.length, b.length)];
-
-        int len = result.length;
-
-        for (int i=0; i<result.length; i++){
-            result[i] = (byte) (((int) a[i]) ^ ((int) b[i]));
-        }
-        return result;
-    }
-
-
-    private byte[] xorWithKey(byte[] a, byte[] key) {
-        byte[] out = new byte[a.length];
-        for (int i = 0; i < a.length; i++) {
-            out[i] = (byte) (a[i] ^ key[i%key.length]);
-        }
-        return out;
-    }
-
-    public String encode(String s, String key) {
-        return base64Encode(xorWithKey(s.getBytes(), key.getBytes()));
-    }
-
-    public String decode(String s, String key) {
-        return new String(xorWithKey(base64Decode(s), key.getBytes()));
-    }
-
-    private static byte[] base64Decode(String s) {
-        return Base64.decodeBase64(s);
-    }
-
-    private String base64Encode(byte[] bytes) {
-        return Base64.encodeBase64String(bytes).replaceAll("\\s", "");
-
-    }
 
     public byte[] generateHashFromNonces(String hisNonce, String myNonce) throws
             UnsupportedEncodingException, NoSuchAlgorithmException{

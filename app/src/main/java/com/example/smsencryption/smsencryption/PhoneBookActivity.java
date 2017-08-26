@@ -40,6 +40,7 @@ public class PhoneBookActivity extends AppCompatActivity {
     private ListView list;
     private FABToolbarLayout morph;
     private String PRIVATE_KEY_FILE="privatekey.txt";
+    private String myName="myself";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,14 +56,50 @@ public class PhoneBookActivity extends AppCompatActivity {
         optionInfo = findViewById(R.id.optionInfo);
         optionUpdateKeys = findViewById(R.id.optionUpdateKeys);
 
+        SMSEncryptionDbHelper mDbHelper1 = new SMSEncryptionDbHelper(getBaseContext());
+
+        SQLiteDatabase db1 = mDbHelper1.getReadableDatabase();
+
+        String[] projection1 = {
+                SMSEncryptionContract.Directory._ID,
+                SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+        };
+
+        Cursor cursor1 = db1.query(
+                SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                projection1,                               // The columns to return
+                null,                                // The columns for the WHERE clause
+                null,                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                null                                      // The sort order
+        );
+
+        List itemContacts = new ArrayList<>();
+        List itemNames = new ArrayList<>();
+
+        while(cursor1.moveToNext()) {
+            String contact = cursor1.getString(cursor1.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER));
+            Log.i("i:", "phone number of contact:"+contact);
+            itemContacts.add(contact);
+
+            String name = cursor1.getString(cursor1.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_NAME));
+            Log.i("i:", "contact name: "+name);
+            itemNames.add(name);
+        }
+        cursor1.close();
+
         list = (ListView)findViewById(R.id.listContacts);
 
         List<PhoneBook> listPhoneBook = new ArrayList<PhoneBook>();
-        listPhoneBook.add(new PhoneBook("Contact 1", "5555"));
-        listPhoneBook.add(new PhoneBook("Contact 1", "5555"));
-        listPhoneBook.add(new PhoneBook("Contact 1", "5555"));
 
-        PhoneBookAdapter adapter = new PhoneBookAdapter(this, listPhoneBook);
+        for (int i =1; i<itemContacts.size(); i++){
+            listPhoneBook.add(new PhoneBook(itemNames.get(i).toString(), itemContacts.get(i).toString()));
+        }
+
+        PhoneBookAdapter adapter = new PhoneBookAdapter(this,listPhoneBook);
         list.setAdapter(adapter);
 
         fab.setOnClickListener(new View.OnClickListener() {
@@ -110,6 +147,7 @@ public class PhoneBookActivity extends AppCompatActivity {
 
             String[] projection = {
                     SMSEncryptionContract.Directory._ID,
+                    SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
                     SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
             };
@@ -160,9 +198,6 @@ public class PhoneBookActivity extends AppCompatActivity {
                 byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
                 String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
 
-                //byte[] bytesMyPrivateKey = Constants.getMyPrivateKey().getEncoded();
-                //String strMyPrivateKey = new String(Hex.encodeHex(bytesMyPrivateKey));
-
                 //TODO: save the private key generated in the device
                 //Here the private key is going to be stored in the device
                 try{
@@ -190,6 +225,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                 //TODO: It is not saved in the db so save the key of Bob
                 //save values on the database
 
+                values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, myName);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, myPhoneNumber);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strMyPublicKey);
 

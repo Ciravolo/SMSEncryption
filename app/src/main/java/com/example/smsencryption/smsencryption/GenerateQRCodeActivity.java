@@ -61,7 +61,7 @@ public class GenerateQRCodeActivity extends AppCompatActivity {
             Constants.setW(randomSeed);
 
             //TODO: sending by text message the W to test, but it should be from Qrcode exchange
-            sendSMS(phoneNumber,randomSeed+":W");
+            sendSMS(phoneNumber, contactName,randomSeed+":W");
 
         }
         catch(Exception e){
@@ -115,36 +115,27 @@ public class GenerateQRCodeActivity extends AppCompatActivity {
     }
 
 
-    private void sendSMS(String phoneNumber, String message){
+    private void sendSMS(String phoneNumber, String contactName, String message){
+
+        Intent sendPhoneNumberIntent = new Intent("my.action.string");
+        sendPhoneNumberIntent.putExtra("contactname", contactName);
+        sendBroadcast(sendPhoneNumberIntent);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
-                new Intent(SENT), 0);
+                new Intent(SENT), PendingIntent.FLAG_ONE_SHOT);
 
         PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
-                new Intent(DELIVERED), 0);
+                new Intent(DELIVERED), PendingIntent.FLAG_ONE_SHOT);
 
         try{
             SmsManager sms = SmsManager.getDefault();
             Toast.makeText(getApplicationContext(), "Phone number to send:"+phoneNumber, Toast.LENGTH_LONG).show();
 
-            sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
+            sms.sendTextMessage(phoneNumber, contactName, message, sentPI, deliveredPI);
         } catch(Exception e){
             Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
-    }
-
-    private static byte[] decodeBase64(String dataToDecode)
-    {
-        byte[] dataDecoded = Base64.decodeBase64(dataToDecode);
-        return dataDecoded;
-    }
-
-    //encode data in base 64
-    private static byte[] encodeBase64(byte[] dataToEncode)
-    {
-        byte[] dataEncoded = Base64.encodeBase64(dataToEncode);
-        return dataEncoded;
     }
 
 }

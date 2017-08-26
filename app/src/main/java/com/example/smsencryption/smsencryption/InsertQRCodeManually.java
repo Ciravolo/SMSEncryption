@@ -6,9 +6,12 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import static android.app.PendingIntent.FLAG_ONE_SHOT;
 
 public class InsertQRCodeManually extends AppCompatActivity {
 
@@ -39,21 +42,25 @@ public class InsertQRCodeManually extends AppCompatActivity {
                 Utils u = new Utils();
                 String nonce = u.generateNonce();
                 Constants.setMyNonce(nonce);
-
-                sendSMS(phoneNumber, nonce+":P:0");
+                sendSMS(contactName, phoneNumber, nonce+":P:0");
             }
         });
 
     }
 
 
-    private void sendSMS(String phoneNumber, String encryptedMessage){
+    private void sendSMS(String contactName, String phoneNumber, String encryptedMessage){
+
+        Intent sendPhoneNumberIntent = new Intent("my.action.string");
+        sendPhoneNumberIntent.putExtra("contactname", contactName);
+
+        sendBroadcast(sendPhoneNumberIntent);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
-                new Intent(SENT), 0);
+                new Intent(SENT), FLAG_ONE_SHOT);
 
         PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
-                new Intent(DELIVERED), 0);
+                new Intent(DELIVERED), FLAG_ONE_SHOT);
 
         try{
             SmsManager sms = SmsManager.getDefault();
@@ -62,7 +69,8 @@ public class InsertQRCodeManually extends AppCompatActivity {
             //before sending the message I append the step
             String m = encryptedMessage;
 
-            sms.sendTextMessage(phoneNumber, null, m, sentPI, deliveredPI);
+            //testing that the service center address parameter can be used as a contact name parameter
+            sms.sendTextMessage(phoneNumber, contactName, m, sentPI, deliveredPI);
         } catch(Exception e){
             Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
             e.printStackTrace();
