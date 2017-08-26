@@ -41,6 +41,8 @@ public class PhoneBookActivity extends AppCompatActivity {
     private FABToolbarLayout morph;
     private String PRIVATE_KEY_FILE="privatekey.txt";
     private String myName="myself";
+    private String contactSelected = "";
+    private String phoneSelected = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -294,6 +296,28 @@ public class PhoneBookActivity extends AppCompatActivity {
                 }
             }
         }
+
+        Bundle extras = getIntent().getExtras();
+
+        if (extras!=null){
+
+            contactSelected = extras.getString("SESSION_USERNAME");
+            phoneSelected = extras.getString("SESSION_PHONE");
+
+            Log.i("I: contact selected:", contactSelected);
+            Log.i("I: phone selected:", phoneSelected);
+
+            startSessionKeyProtocol(contactSelected, phoneSelected);
+
+        }
+
+    }
+
+
+    public void startSessionKeyProtocol(String user, String phoneNumber){
+
+        //TODO: start the protocol for the session key establishment
+        //send the first message, which is a nonce generated here.
 
 
     }
