@@ -857,7 +857,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             //do the asymmetric encryption for the first part
                                                             String encryptedFirstPart = encryptAsymmetric(sessionKey, hisPublicKey);
-
                                                             String secondPartToEncrypt = Constants.getHisNonce() + hisLongTermKeyFromDB;
 
                                                             //encrypt symmetric the second part with the key already generated before
@@ -870,7 +869,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             String finalMessage = encryptedFirstPart + encryptedSecondPart;
 
+                                                            Log.i("I:","final message to send after receiving step :S:1:"+finalMessage);
                                                             //now send this message to the sender
+
+                                                            finalMessage = finalMessage + ":S:2";
 
                                                             Utils u4 = new Utils();
                                                             //send the message to receiver
@@ -884,21 +886,23 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             if (finalMessage.length() > 160) {
 
-                                                                ArrayList<String> parts = u4.divideMessageManyParts(finalMessage);
+                                                                Log.i("I:", "yes it arrives here");
+                                                                ArrayList<String> parts2 = u4.divideMessageManyParts(finalMessage);
 
-                                                                for (int i = 0; i < parts.size() - 1; i++) {
-                                                                    parts.set(i, parts.get(i) + ":S:2");
+                                                                for (int i = 0; i < parts2.size() - 1; i++) {
+                                                                    parts2.set(i, parts2.get(i) + ":S:2");
                                                                 }
 
-                                                                for (int j = 0; j < parts.size(); j++) {
-                                                                    parts.set(j, parts.size() + "*" + parts.get(j));
+                                                                for (int j = 0; j < parts2.size(); j++) {
+                                                                    parts2.set(j, parts2.size() + "*" + parts2.get(j));
                                                                 }
 
-                                                                for (int k = 0; k < parts.size(); k++) {
+                                                                for (int k = 0; k < parts2.size(); k++) {
                                                                     smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                            parts.get(k), sentIntent, null);
+                                                                            parts2.get(k), sentIntent, null);
                                                                 }
                                                             } else {
+                                                                Log.i("I:", "testing here");
                                                                 smsManager.sendTextMessage(originatingPhoneNumber, null,
                                                                         finalMessage, sentIntent, null);
                                                             }
@@ -907,9 +911,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             e.printStackTrace();
                                                             Log.i("i:","cannot load the public key from the database");
                                                         }
-
-
-
 
                                                     } catch (UnsupportedEncodingException e) {
                                                         e.printStackTrace();
@@ -920,30 +921,43 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     }
 
                                                 }
-                                                case 2:{
-                                                    //retrieve this info
-                                                    String[] arrSplit = arr[0].split("\\*");
-                                                    Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
+                                                case 2: {
 
-                                                    Constants.setNumberMessages(Constants.getNumberMessages() + 1);
-                                                    Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                    try{
+                                                        if (arr.length > 2) {
+                                                            //retrieve this info
+                                                            String[] arrSplit = arr[0].split("\\*");
 
-                                                    if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
-
-                                                        infoToDecrypt = Constants.getDecryptionMessage();
-
-                                                        if (!infoToDecrypt.isEmpty()) {
-                                                            try {
-                                                                byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
-                                                                //TODO: from here need to decrypt the first part asymmetrically and the second part symmetrically
-                                                                String strReceived = new String(Hex.encodeHex(receivedBytes));
-
-                                                                Log.i("step 2 SessionKey:", strReceived);
-
-                                                            } catch (DecoderException e){
-                                                                e.printStackTrace();
+                                                            for (int m = 0; m < arrSplit.length; m++) {
+                                                                Log.i("I: item: ", arrSplit[m]);
                                                             }
+
+                                                            Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
+
+                                                            Constants.setNumberMessages(Constants.getNumberMessages() + 1);
+                                                            Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+
+                                                            if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
+
+                                                                infoToDecrypt = Constants.getDecryptionMessage();
+
+                                                                if (!infoToDecrypt.isEmpty()) {
+                                                                    try {
+                                                                        byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
+                                                                        //TODO: from here need to decrypt the first part asymmetrically and the second part symmetrically
+                                                                        String strReceived = new String(Hex.encodeHex(receivedBytes));
+                                                                        Log.i("step 2 SessionKey:", strReceived);
+
+
+                                                                    } catch (DecoderException e) {
+                                                                        e.printStackTrace();
+                                                                    }
+                                                                }
+                                                            }
+
                                                         }
+                                                    }catch(Exception e){
+                                                        e.printStackTrace();
                                                     }
                                                 }
                                             }
