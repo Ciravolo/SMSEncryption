@@ -740,6 +740,57 @@ public class SmsReceiver extends BroadcastReceiver{
                                     if (protocolId.compareTo("W") == 0) {
                                         //received the initial W
                                         Constants.setW(receivedMessage);
+                                    }else{
+                                        if (protocolId.compareTo("S")==0){
+                                            //to establish the session key here
+
+
+                                            //send sms step S:1
+                                            switch (stepProtocol) {
+                                                case 0: {
+                                                    Log.i("nonce received: ", receivedMessage);
+                                                    Constants.setHisNonce(receivedMessage);
+
+                                                    //generate my nonce
+                                                    Utils u = new Utils();
+                                                    String nonceGenerated = u.generateNonce();
+                                                    Constants.setMyNonce(nonceGenerated);
+
+                                                    //append the nonce received to my nonce and send it
+                                                    String messageToSend = Constants.getMyNonce() + Constants.getHisNonce();
+                                                }
+                                                case 1:{
+                                                    Log.i("message received:S:1=", receivedMessage);
+
+                                                    //TODO: generate a session key here
+
+
+                                                    Utils u2 = new Utils();
+
+                                                    byte[] salt = new byte[0];
+                                                    try {
+                                                        String strMaterial = Constants.getHisNonce()+Constants.getMyNonce();
+                                                        salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
+                                                        byte[] keyForExchangeKeys = u2.deriveKey(strMaterial, salt, 1, 128);
+
+                                                        //TODO: do the asymmetric encryption
+
+
+
+                                                    } catch (UnsupportedEncodingException e) {
+                                                        e.printStackTrace();
+                                                    } catch (NoSuchAlgorithmException e) {
+                                                        e.printStackTrace();
+                                                    } catch (java.lang.Exception e){
+                                                        e.printStackTrace();
+                                                    }
+
+
+                                                }
+                                            }
+
+                                        }
+
                                     }
                                 }
 
@@ -792,6 +843,35 @@ public class SmsReceiver extends BroadcastReceiver{
         }
     }
 
+    public String encryptAsymmetric(byte[] message, PublicKey key) {
+
+        byte[] encrypted = null;
+
+        try{
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            encrypted = cipher.doFinal(message);
+            String strEncrypted = new String(Hex.encodeHex(encrypted));
+            return strEncrypted;
+        }
+        catch(NoSuchAlgorithmException e){
+            e.printStackTrace();
+            return null;
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+            return null;
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public String decryptSymmetric(byte[] message, byte[] key)  {
 
         byte[] clearText = null;
@@ -814,6 +894,25 @@ public class SmsReceiver extends BroadcastReceiver{
             clearText = cipher.doFinal(message);
 
             return new String(Hex.encodeHex(clearText));
+        }
+        catch( Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String decryptAsymmetric(byte[] message, PrivateKey key)  {
+
+        String clearText = "";
+        byte[] decryptedBytes;
+        try {
+            String strEncrypted = new String(Hex.encodeHex(message));
+            Log.i("I:asymmetric dec:", strEncrypted);
+
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            decryptedBytes = cipher.doFinal(message);
+            return new String(Hex.encodeHex(decryptedBytes));
         }
         catch( Exception e){
             e.printStackTrace();
