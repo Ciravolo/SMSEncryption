@@ -75,7 +75,8 @@ public class PhoneBookActivity extends AppCompatActivity {
                 SMSEncryptionContract.Directory._ID,
                 SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                 SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY
         };
 
         Cursor cursor1 = db1.query(
@@ -160,7 +161,8 @@ public class PhoneBookActivity extends AppCompatActivity {
                     SMSEncryptionContract.Directory._ID,
                     SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
-                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY
+                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                    SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
             };
 
             // Filter results WHERE "title" = 'My Title'
@@ -239,6 +241,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, myName);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, myPhoneNumber);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strMyPublicKey);
+                values.put(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY, Constants.getW());
 
                 //Insert the row
                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
@@ -277,15 +280,13 @@ public class PhoneBookActivity extends AppCompatActivity {
 
                 try {
                     byte[] bytesPublicKey = Hex.decodeHex(publicKeyStr.toCharArray());
-
                     PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesPublicKey));
                     Constants.setMyPublicKey(myPublicKey);
-
                     Log.i("i:", "public key is set from the database correctly");
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    Log.i("i:","cannot load the keys from the database");
+                    Log.i("i:","cannot load the public key from the database");
                 }
 
                 //to set the private I do the following: read the file on the device

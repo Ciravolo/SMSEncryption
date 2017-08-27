@@ -17,14 +17,10 @@ import java.security.PublicKey;
 
 public class Constants {
 
-    private static SecretKey LONGTERM_SHARED_KEY_SECRET;
-
-    private static String W;
+    private static String W = "none";
 
     private static String SESSION_KEY_A = "";
     private static String SESSION_KEY_B = "";
-    private static String PRIVATE_KEY_A = "privatekeyA12345";
-    private static String PRIVATE_KEY_B = "privatekeyB12345";
 
     private static String PIN_A = "";
     private static String PIN_B = "";
@@ -118,22 +114,6 @@ public class Constants {
     }
 
     public static String getW(){ return W; }
-
-    public static String getPrivateKeyB(){
-        return PRIVATE_KEY_B;
-    }
-
-    public static String getPrivateKeyA(){
-        return PRIVATE_KEY_A;
-    }
-
-    public static void setLongTermSharedKeySecret(SecretKey s){
-        LONGTERM_SHARED_KEY_SECRET = s;
-    }
-
-    public static SecretKey getLongtermSharedKeySecret(){
-        return LONGTERM_SHARED_KEY_SECRET;
-    }
 
     public static void setSessionKeyA(String sessionKeyA){
         SESSION_KEY_A = sessionKeyA;
