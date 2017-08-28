@@ -76,7 +76,8 @@ public class PhoneBookActivity extends AppCompatActivity {
                 SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                 SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
                 SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
-                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY
+                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
         };
 
         Cursor cursor1 = db1.query(
@@ -163,6 +164,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                     SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
                     SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
                     SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                    SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
             };
 
             // Filter results WHERE "title" = 'My Title'
@@ -242,6 +244,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, myPhoneNumber);
                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strMyPublicKey);
                 values.put(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY, Constants.getW());
+                values.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, "none");
 
                 //Insert the row
                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);

@@ -18,6 +18,7 @@ public final class SMSEncryptionContract {
         public static final String COLUMN_NAME_PHONENUMBER = "phonenumber";
         public static final String COLUMN_NAME_PUBLICKEY = "publickey";
         public static final String COLUMN_LONG_TERM_KEY = "longtermkey";
+        public static final String COLUMN_SESSION_KEY = "sessionkey";
     }
 
     public static final String SQL_CREATE_ENTRIES =
@@ -26,7 +27,8 @@ public final class SMSEncryptionContract {
                     Directory.COLUMN_NAME_NAME + " TEXT," +
                     Directory.COLUMN_NAME_PHONENUMBER + " TEXT," +
                     Directory.COLUMN_NAME_PUBLICKEY + " TEXT," +
-                    Directory.COLUMN_LONG_TERM_KEY + " TEXT)";
+                    Directory.COLUMN_LONG_TERM_KEY + " TEXT," +
+                    Directory.COLUMN_SESSION_KEY + " TEXT)";
 
 
     public static final String SQL_DELETE_ENTRIES =
