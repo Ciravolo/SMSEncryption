@@ -229,12 +229,12 @@ public class SmsReceiver extends BroadcastReceiver{
                                             //When alice receives the encrypted data first step
                                             if (arr.length > 2) {
 
-                                                String[] arrSplit = arr[0].split("\\*");
+                                                String[] arrSplit1 = arr[0].split("\\*");
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
-                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit1[1]);
 
-                                                if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
+                                                if (Integer.parseInt(arrSplit1[0]) == Constants.getNumberMessages()) {
 
                                                     infoToDecrypt = Constants.getDecryptionMessage();
 
@@ -458,12 +458,14 @@ public class SmsReceiver extends BroadcastReceiver{
                                         try {
                                             if (arr.length > 2) {
 
-                                                String[] arrSplit = arr[0].split("\\*");
+                                                Log.i("arr[0]:", arr[0]);
+                                                Log.i("received msg:", receivedMessage);
+                                                String[] arrSplit2 = arr[0].split("\\*");
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
-                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit2[1]);
 
-                                                if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
+                                                if (Integer.parseInt(arrSplit2[0]) == Constants.getNumberMessages()) {
 
                                                     infoToDecrypt = Constants.getDecryptionMessage();
 
@@ -657,13 +659,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                         try {
                                             if (arr.length > 2) {
 
-                                                String[] arrSplit = arr[0].split("\\*");
+                                                String[] arrSplit3 = arr[0].split("\\*");
                                                 Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
-                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit3[1]);
 
-                                                if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
+                                                if (Integer.parseInt(arrSplit3[0]) == Constants.getNumberMessages()) {
 
                                                     infoToDecrypt = Constants.getDecryptionMessage();
 
@@ -751,11 +753,9 @@ public class SmsReceiver extends BroadcastReceiver{
                                     }else{
                                         if (protocolId.compareTo("S")==0){
                                             //to establish the session key here
-
-
                                             //send sms step S:1
                                             switch (stepProtocol) {
-                                                case 0: {
+                                                case 0:
                                                     Log.i("nonce received: ", receivedMessage);
                                                     Constants.setHisNonce(receivedMessage);
 
@@ -784,8 +784,8 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                     Toast.makeText(context, messageToSend, Toast.LENGTH_SHORT).show();
 
-                                                }
-                                                case 1:{
+                                                    break;
+                                                case 1:
 
                                                     //clear these variables just in case
                                                     Constants.setNumberMessages(0);
@@ -876,9 +876,9 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             Utils u4 = new Utils();
                                                             //send the message to receiver
-                                                            SmsManager smsManager = SmsManager.getDefault();
+                                                            SmsManager smsManager2 = SmsManager.getDefault();
 
-                                                            PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
+                                                            PendingIntent sentIntent2 = PendingIntent.getBroadcast(context, 0,
                                                                     intent, 0);
                                                             context.getApplicationContext().registerReceiver(
                                                                     new SmsReceiver(),
@@ -886,7 +886,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             if (finalMessage.length() > 160) {
 
-                                                                Log.i("I:", "yes it arrives here");
                                                                 ArrayList<String> parts2 = u4.divideMessageManyParts(finalMessage);
 
                                                                 for (int i = 0; i < parts2.size() - 1; i++) {
@@ -898,13 +897,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 }
 
                                                                 for (int k = 0; k < parts2.size(); k++) {
-                                                                    smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                            parts2.get(k), sentIntent, null);
+                                                                    Log.i("to send in step 2:", parts2.get(k));
+                                                                    smsManager2.sendTextMessage(originatingPhoneNumber, null,
+                                                                            parts2.get(k), sentIntent2, null);
                                                                 }
                                                             } else {
-                                                                Log.i("I:", "testing here");
-                                                                smsManager.sendTextMessage(originatingPhoneNumber, null,
-                                                                        finalMessage, sentIntent, null);
+                                                                smsManager2.sendTextMessage(originatingPhoneNumber, null,
+                                                                        finalMessage, sentIntent2, null);
                                                             }
 
                                                         } catch (Exception e) {
@@ -919,25 +918,17 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     } catch (java.lang.Exception e){
                                                         e.printStackTrace();
                                                     }
-
-                                                }
-                                                case 2: {
-
+                                                break;
+                                                case 2:
                                                     try{
                                                         if (arr.length > 2) {
-                                                            //retrieve this info
-                                                            String[] arrSplit = arr[0].split("\\*");
 
-                                                            for (int m = 0; m < arrSplit.length; m++) {
-                                                                Log.i("I: item: ", arrSplit[m]);
-                                                            }
-
-                                                            Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
+                                                            String[] arrSplit4 = arr[0].split("\\*");
 
                                                             Constants.setNumberMessages(Constants.getNumberMessages() + 1);
-                                                            Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit[1]);
+                                                            Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit4[1]);
 
-                                                            if (Integer.parseInt(arrSplit[0]) == Constants.getNumberMessages()) {
+                                                            if (Integer.parseInt(arrSplit4[0]) == Constants.getNumberMessages()) {
 
                                                                 infoToDecrypt = Constants.getDecryptionMessage();
 
@@ -946,7 +937,40 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
                                                                         //TODO: from here need to decrypt the first part asymmetrically and the second part symmetrically
                                                                         String strReceived = new String(Hex.encodeHex(receivedBytes));
-                                                                        Log.i("step 2 SessionKey:", strReceived);
+                                                                        Log.i("str received:", strReceived);
+
+                                                                        byte[] firstPartToDecrypt = new byte[256];
+                                                                        System.arraycopy(receivedBytes, 0, firstPartToDecrypt, 0, firstPartToDecrypt.length);
+
+                                                                        int secondPartSize =receivedBytes.length - 256;
+                                                                        byte[] secondPartToDecrypt = new byte[secondPartSize];
+
+                                                                        System.arraycopy(receivedBytes, 256, secondPartToDecrypt, 0, secondPartSize);
+
+                                                                        //TODO: use the first part for the public key asymmetric decryption: need to read the
+                                                                        //TODO: private key from file first
+
+
+
+                                                                        //TODO: second part is accesible via symmetric encryption with the kab key obtained in the step before
+
+
+                                                                        /*
+                                                                        byte[] bytesHisNonce = Hex.decodeHex(Constants.getHisNonce().toCharArray());
+
+                                                                        byte[] firstPartWithoutEnc = new byte[bytesHisNonce.length + bytesMyPublicKey.length];
+                                                                        System.arraycopy(bytesHisNonce, 0, firstPartWithoutEnc, 0, bytesHisNonce.length);
+                                                                        System.arraycopy(bytesMyPublicKey, 0, firstPartWithoutEnc, bytesHisNonce.length, bytesMyPublicKey.length);
+
+                                                                        byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
+                                                                        byte[] keyForExchangeKeys = u.deriveKey(Constants.getW(), salt, 1, 128);
+
+                                                                        Constants.setKeyForExchangeKeys(keyForExchangeKeys);
+
+                                                                        String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
+                                                                        */
+
+
 
 
                                                                     } catch (DecoderException e) {
@@ -959,7 +983,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     }catch(Exception e){
                                                         e.printStackTrace();
                                                     }
-                                                }
+                                                break;
                                             }
 
                                         }
@@ -1024,6 +1048,12 @@ public class SmsReceiver extends BroadcastReceiver{
             cipher.init(Cipher.ENCRYPT_MODE, key);
             encrypted = cipher.doFinal(message);
             String strEncrypted = new String(Hex.encodeHex(encrypted));
+
+            //TODO:check how many bytes implies this encryption
+            byte[] bytesEncMessage = Hex.decodeHex(strEncrypted.toCharArray());
+            int i =bytesEncMessage.length;
+
+            Log.i("size of the bytes:",String.valueOf(i));
             return strEncrypted;
         }
         catch(NoSuchAlgorithmException e){
@@ -1039,6 +1069,9 @@ public class SmsReceiver extends BroadcastReceiver{
             e.printStackTrace();
             return null;
         } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }catch (DecoderException e) {
             e.printStackTrace();
             return null;
         }
