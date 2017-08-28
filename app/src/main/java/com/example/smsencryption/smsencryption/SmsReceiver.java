@@ -768,6 +768,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     String nonceGenerated = u.generateNonce();
                                                     Constants.setMyNonce(nonceGenerated);
 
+                                                    Log.i("nonce generated at beg:", nonceGenerated);
+
                                                     //append the nonce received to my nonce and send it
                                                     String messageToSend = Constants.getMyNonce() + Constants.getHisNonce();
                                                     messageToSend = messageToSend + ":S:1";
@@ -792,6 +794,27 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     Constants.setDecryptionMessage("");
 
                                                     Log.i("message received:S:1:", receivedMessage);
+
+                                                    //from this message since the nonces are new, alice should check his nonce appended
+                                                    try{
+                                                        byte[] receivedByteArray = Hex.decodeHex(receivedMessage.toCharArray());
+                                                        byte[] bytesNa = new byte[16];
+                                                        byte[] bytesNb = new byte[16];
+
+                                                        System.arraycopy(receivedByteArray, 0, bytesNb, 0, bytesNb.length);
+                                                        System.arraycopy(receivedByteArray, 16, bytesNa, 0, bytesNa.length);
+
+                                                        String naReceivedStr = new String(Hex.encodeHex(bytesNa));
+                                                        String nbReceivedStr = new String(Hex.encodeHex(bytesNb));
+
+
+                                                    }catch(DecoderException e){
+                                                        e.printStackTrace();
+                                                    }
+
+
+
+
                                                     //generate a hash as salt and a material also passed to generate a key
                                                     Utils u2 = new Utils();
 
@@ -799,7 +822,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     try {
                                                         String strMaterial = Constants.getHisNonce()+Constants.getMyNonce();
                                                         salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
+
+
+                                                        //TODO: print the hex string of the session key to check if it is the same received
                                                         byte[] sessionKey = u2.deriveKey(strMaterial, salt, 1, 128);
+
+                                                        String sessionKeyStr = new String(Hex.encodeHex(sessionKey));
+                                                        Log.i("session key generated:", sessionKeyStr);
 
                                                         //get his public key from the database
                                                         SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
@@ -935,7 +964,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 if (!infoToDecrypt.isEmpty()) {
                                                                     try {
                                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
-                                                                        //TODO: from here need to decrypt the first part asymmetrically and the second part symmetrically
+                                                                        //from here need to decrypt the first part asymmetrically and the second part symmetrically
                                                                         String strReceived = new String(Hex.encodeHex(receivedBytes));
                                                                         Log.i("str received:", strReceived);
 
@@ -947,29 +976,123 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                         System.arraycopy(receivedBytes, 256, secondPartToDecrypt, 0, secondPartSize);
 
-                                                                        //TODO: use the first part for the public key asymmetric decryption: need to read the
-                                                                        //TODO: private key from file first
+                                                                        //use the first part for the public key asymmetric decryption: need to read the
+                                                                        //private key from file first
+
+                                                                        //check if it is set first
+                                                                        if (Constants.getMyPrivateKey()==null){
+
+                                                                            Utils u3 = new Utils();
+
+                                                                            try {
+                                                                                File fileToRead = new File(Environment.getExternalStorageDirectory() + File.separator + PRIVATE_KEY_FILE);
+                                                                                PrivateKey privKeyFromDevice = u3.readPrivateKey(fileToRead);
+
+                                                                                if (privKeyFromDevice!=null){
+                                                                                    //set in my current execution
+                                                                                    Constants.setMyPrivateKey(privKeyFromDevice);
+                                                                                }
+
+                                                                            }catch(Exception e){
+                                                                                e.printStackTrace();
+                                                                            }
+                                                                        }
+
+                                                                        PrivateKey myPk = Constants.getMyPrivateKey();
+
+                                                                        String firstDecryptionAsymmetric = decryptAsymmetric(firstPartToDecrypt, myPk);
+
+                                                                        Log.i("show me the kab:", firstDecryptionAsymmetric);
+
+                                                                        String sessionKey = firstDecryptionAsymmetric;
+
+                                                                        byte[] sessionKeyBytes = Hex.decodeHex(sessionKey.toCharArray());
+
+                                                                        //now need to obtain the W from database
+
+                                                                        SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+
+                                                                        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                                                                        String[] projection = {
+                                                                                SMSEncryptionContract.Directory._ID,
+                                                                                SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                                                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                                        };
+
+                                                                        // Filter results WHERE "title" = 'My Title'
+                                                                        String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                                        String[] selectionArgs = { originatingPhoneNumber };
+
+                                                                        Cursor cursor = db.query(
+                                                                                SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                                projection,                               // The columns to return
+                                                                                selection,                                // The columns for the WHERE clause
+                                                                                selectionArgs,                            // The values for the WHERE clause
+                                                                                null,                                     // don't group the rows
+                                                                                null,                                     // don't filter by row groups
+                                                                                null                                      // The sort order
+                                                                        );
+
+                                                                        List itemLTK = new ArrayList<>();
+                                                                        while(cursor.moveToNext()) {
+                                                                            String ltk = cursor.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                                                                            Log.i("i:", "lt key from database:"+ltk);
+                                                                            itemLTK.add(ltk);
+                                                                        }
+                                                                        cursor.close();
+
+                                                                        if (Constants.getW().compareTo("none")==0){
+                                                                            //meaning that it is not set
+                                                                            Constants.setW(itemLTK.get(0).toString());
+                                                                        }
+
+                                                                        //second part is accesible via symmetric encryption with the session key obtained in the step before
+
+                                                                        String secondDecryptionSymmetric = decryptSymmetric(secondPartToDecrypt, sessionKeyBytes);
+
+                                                                        byte[] secondDecryptionBytes = Hex.decodeHex(secondDecryptionSymmetric.toCharArray());
+
+                                                                        byte[] nonceToCheck = new byte[16];
+                                                                        System.arraycopy(secondDecryptionBytes, 0, nonceToCheck, 0, nonceToCheck.length);
+
+                                                                        int remainSize = secondDecryptionBytes.length - 16;
+                                                                        byte[] longTermPartBytes = new byte[remainSize];
+                                                                        System.arraycopy(secondDecryptionBytes, 16, longTermPartBytes, 0 , remainSize);
+
+                                                                        String strNonceToCheck = new String(Hex.encodeHex(nonceToCheck));
+                                                                        //check if it is equals to my nonce
+                                                                        Log.i("nonce to check:", strNonceToCheck);
+
+                                                                        String strWToCheck = new String(Hex.encodeHex(longTermPartBytes));
+                                                                        Log.i("w obtained from dec:", strWToCheck);
+
+                                                                        Log.i("I: nonce to compare", Constants.getMyNonce());
+                                                                        Log.i("I: w to compare", Constants.getW());
+
+
+                                                                        if (Constants.getMyNonce().compareTo(strNonceToCheck)==0){
+                                                                            //passed the first test, and also need to check second condition: W
+
+                                                                            Log.i("I:"," nonces correspond!");
+
+                                                                            if (Constants.getW().compareTo(strWToCheck)==0){
+
+                                                                                //Success!
+                                                                                Log.i("I:", "SUCCESS!");
+                                                                            }
+
+                                                                        }
 
 
 
-                                                                        //TODO: second part is accesible via symmetric encryption with the kab key obtained in the step before
+                                                                        //TODO: need to check what part is the nonce and the W from that dec
 
+                                                                        //TODO: need to compare that the nonce and the W corresponds
 
-                                                                        /*
-                                                                        byte[] bytesHisNonce = Hex.decodeHex(Constants.getHisNonce().toCharArray());
-
-                                                                        byte[] firstPartWithoutEnc = new byte[bytesHisNonce.length + bytesMyPublicKey.length];
-                                                                        System.arraycopy(bytesHisNonce, 0, firstPartWithoutEnc, 0, bytesHisNonce.length);
-                                                                        System.arraycopy(bytesMyPublicKey, 0, firstPartWithoutEnc, bytesHisNonce.length, bytesMyPublicKey.length);
-
-                                                                        byte[] salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
-                                                                        byte[] keyForExchangeKeys = u.deriveKey(Constants.getW(), salt, 1, 128);
-
-                                                                        Constants.setKeyForExchangeKeys(keyForExchangeKeys);
-
-                                                                        String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
-                                                                        */
-
+                                                                        //TODO: if it corresponds then confirm sending his nonce which has been set before encrypted with kab
 
 
 
