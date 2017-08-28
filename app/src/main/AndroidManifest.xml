@@ -25,10 +25,6 @@
             android:value="AIzaSyD1HjCq07-RQ15Hgq0Jl2TzVYe7GIMj2Wo" />
 
         <activity
-            android:name=".SendMessageActivity"
-            android:label="@string/title_activity_send_message"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
             android:name=".PhoneBookActivity"
             android:label="PhoneBookActivity"
             android:theme="@style/AppTheme.NoActionBar">

@@ -24,10 +24,19 @@
             android:id="@+id/sessionkey_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toLeftOf="@id/txtPhoneNumber"
             android:layout_centerVertical="true"
             android:layout_marginRight="10dp"
+            android:layout_toLeftOf="@id/txtPhoneNumber"
             android:text="Session key" />
+
+        <Button
+            android:id="@+id/send_message_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:layout_toLeftOf="@id/sessionkey_btn"
+            android:text="Send message"/>
 
     </LinearLayout>
 

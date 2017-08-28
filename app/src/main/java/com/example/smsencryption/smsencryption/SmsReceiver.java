@@ -1121,10 +1121,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                                         selectionUpdate,
                                                                                         selectionArgsUpdate);
                                                                                 Log.i("I:", "Rows updated:"+count);
-
-                                                                                //Here I updated my session key for communication with Alice
-
-                                                                                 String lastMessage = nonceEncrypted + ":S:3";
+                                                                                
+                                                                                String lastMessage = nonceEncrypted + ":S:3";
 
                                                                                 SmsManager smsManager3 = SmsManager.getDefault();
 
@@ -1137,7 +1135,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                                         lastMessage , sentIntent3, null);
 
                                                                                 Toast.makeText(context, lastMessage, Toast.LENGTH_SHORT).show();
-
 
                                                                             }
                                                                             else{
