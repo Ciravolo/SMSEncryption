@@ -1219,9 +1219,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                         }
                                         else{
+                                            Log.i("here", "protocol");
                                             if (protocolId.compareTo("M")==0){
                                                 //decrypt the message received and show it on a toast
-                                                Log.i("message received: ", receivedMessage);
+                                                Log.i("LAST MESSAGE: ", receivedMessage);
 
                                                 SMSEncryptionDbHelper mDbHelperSK = new SMSEncryptionDbHelper(context);
 

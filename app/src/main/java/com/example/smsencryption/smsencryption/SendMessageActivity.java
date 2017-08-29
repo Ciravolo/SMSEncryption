@@ -7,6 +7,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -83,11 +84,14 @@ public class SendMessageActivity extends AppCompatActivity {
     private void sendEncryptedSMS(String phoneNumber, String sessionKey, String plainText){
 
         try{
-            byte[] plainTextBytes = plainText.getBytes("UTF-8");
+
+            byte[] plainTextBytes = Base64.encode(plainText.getBytes(), Base64.DEFAULT);
             byte[] sessionKeyBytes = Hex.decodeHex(sessionKey.toCharArray());
 
             String messageEncrypted = encryptSymmetrically(plainTextBytes, sessionKeyBytes);
             messageEncrypted = messageEncrypted+":M";
+
+            Log.i("SEND ON ENC:", messageEncrypted);
 
             PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), PendingIntent.FLAG_ONE_SHOT);
