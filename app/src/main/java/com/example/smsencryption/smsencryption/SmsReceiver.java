@@ -1265,7 +1265,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         String sessionKeyStr = itemSessionKey.get(0).toString();
 
                                                         byte[] sessionKeyBytes = Hex.decodeHex(sessionKeyStr.toCharArray());
-                                                        byte[] receivedBytes = Hex.decodeHex(receivedMessage.toCharArray());
+                                                        byte[] receivedBytes = receivedMessage.getBytes("UTF-8");
 
                                                         String decryptedMessage = decryptSymmetrically(receivedBytes, sessionKeyBytes);
 
@@ -1386,6 +1386,8 @@ public class SmsReceiver extends BroadcastReceiver{
 
         byte[] clearText = null;
         try {
+
+            byte[] input = Base64.decodeBase64(message);
             SecretKey secretKeySpec = new SecretKeySpec(key, "AES");
 
             byte[] keyBytes = secretKeySpec.getEncoded();
@@ -1396,9 +1398,9 @@ public class SmsReceiver extends BroadcastReceiver{
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 
-            clearText = cipher.doFinal(message);
+            clearText = cipher.doFinal(input);
 
-            return Base64.encodeBase64String(clearText);
+            return new String(clearText);
         }
         catch(Exception e){
             e.printStackTrace();

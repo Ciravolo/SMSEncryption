@@ -85,10 +85,12 @@ public class SendMessageActivity extends AppCompatActivity {
 
         try{
 
-            byte[] plainTextBytes = Base64.encode(plainText.getBytes(), Base64.DEFAULT);
+            byte[] inputByte = plainText.getBytes("UTF-8");
+
+           // byte[] plainTextBytes = Base64.encode(plainText.getBytes(), Base64.DEFAULT);
             byte[] sessionKeyBytes = Hex.decodeHex(sessionKey.toCharArray());
 
-            String messageEncrypted = encryptSymmetrically(plainTextBytes, sessionKeyBytes);
+            String messageEncrypted = encryptSymmetrically(inputByte, sessionKeyBytes);
             messageEncrypted = messageEncrypted+":M";
 
             Log.i("SEND ON ENC:", messageEncrypted);
@@ -119,7 +121,7 @@ public class SendMessageActivity extends AppCompatActivity {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
             encrypted = cipher.doFinal(message);
-            String strEncrypted = Base64.encodeToString(encrypted, Base64.DEFAULT);
+            String strEncrypted = new String(Base64.encode(encrypted, Base64.DEFAULT));
             Log.i("Step 1: After enc:", strEncrypted);
             return strEncrypted;
 
