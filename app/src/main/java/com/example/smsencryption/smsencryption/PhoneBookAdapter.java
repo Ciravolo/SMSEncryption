@@ -64,6 +64,8 @@ public class PhoneBookAdapter extends BaseAdapter implements ListAdapter{
 
         Button establishSessionKeyBtn = (Button) convertView.findViewById(R.id.sessionkey_btn);
 
+        Button sendMessageBtn = (Button) convertView.findViewById(R.id.send_message_btn);
+
         establishSessionKeyBtn.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
@@ -71,6 +73,19 @@ public class PhoneBookAdapter extends BaseAdapter implements ListAdapter{
                 Intent i = new Intent(mContext, PhoneBookActivity.class);
                 i.putExtra("SESSION_USERNAME", entry.getmName());
                 i.putExtra("SESSION_PHONE", entry.getmPhone());
+                mContext.startActivity(i);
+                notifyDataSetChanged();
+            }
+
+        });
+
+        sendMessageBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                //passing the data to the activity to start the session key establishment
+                Intent i = new Intent(mContext, PhoneBookActivity.class);
+                i.putExtra("MESSAGE_USERNAME", entry.getmName());
+                i.putExtra("MESSAGE_PHONE", entry.getmPhone());
                 mContext.startActivity(i);
                 notifyDataSetChanged();
             }

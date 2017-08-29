@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Telephony;
+import android.support.v7.app.AlertDialog;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -1121,7 +1122,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                                         selectionUpdate,
                                                                                         selectionArgsUpdate);
                                                                                 Log.i("I:", "Rows updated:"+count);
-                                                                                
+
                                                                                 String lastMessage = nonceEncrypted + ":S:3";
 
                                                                                 SmsManager smsManager3 = SmsManager.getDefault();
@@ -1158,7 +1159,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     }
                                                 break;
                                                 case 3:
-                                                    Log.i("message received: ", receivedMessage);
 
                                                     try{
                                                         byte[] messageInBytes = Hex.decodeHex(receivedMessage.toCharArray());
@@ -1186,7 +1186,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     values,
                                                                     selectionUpdate,
                                                                     selectionArgsUpdate);
-                                                            Log.i("I:", "Rows updated:"+count);
+                                                            Log.i("I:", "row updated count:"+count);
 
                                                             //if this is okay then send a message to Bob saying the session key was correctly established
                                                             String confirmationMessage =  "Success: session key has been set in the receiver!";
@@ -1217,6 +1217,78 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     break;
                                             }
 
+                                        }
+                                        else{
+                                            if (protocolId.compareTo("M")==0){
+                                                //decrypt the message received and show it on a toast
+                                                Log.i("message received: ", receivedMessage);
+
+                                                SMSEncryptionDbHelper mDbHelperSK = new SMSEncryptionDbHelper(context);
+
+                                                SQLiteDatabase dbSK = mDbHelperSK.getReadableDatabase();
+
+                                                String[] projection = {
+                                                        SMSEncryptionContract.Directory._ID,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                        SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                        SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                                                };
+
+                                                // Filter results WHERE "title" = 'My Title'
+                                                String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                String[] selectionArgs = { originatingPhoneNumber };
+
+                                                Cursor cursor = dbSK.query(
+                                                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                        projection,                               // The columns to return
+                                                        selection,                                // The columns for the WHERE clause
+                                                        selectionArgs,                            // The values for the WHERE clause
+                                                        null,                                     // don't group the rows
+                                                        null,                                     // don't filter by row groups
+                                                        null                                      // The sort order
+                                                );
+
+                                                List itemSessionKey = new ArrayList<>();
+                                                while(cursor.moveToNext()) {
+                                                    String sessionKey = cursor.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
+                                                    Log.i("i:", "session key from database:"+sessionKey);
+                                                    itemSessionKey.add(sessionKey);
+                                                }
+                                                cursor.close();
+
+                                                if (itemSessionKey.get(0).toString().compareTo("none")!=0){
+                                                    Toast.makeText(context, "Error: The session key has not been established.", Toast.LENGTH_SHORT).show();
+                                                }else{
+                                                    try {
+                                                        String sessionKeyStr = itemSessionKey.get(0).toString();
+
+                                                        byte[] sessionKeyBytes = Hex.decodeHex(sessionKeyStr.toCharArray());
+                                                        byte[] receivedBytes = Hex.decodeHex(receivedMessage.toCharArray());
+
+                                                        String decryptedMessage = decryptSymmetric(receivedBytes, sessionKeyBytes);
+
+                                                        AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
+                                                        builder1.setMessage(decryptedMessage);
+                                                        builder1.setCancelable(true);
+
+                                                        builder1.setPositiveButton(
+                                                                "OK",
+                                                                new DialogInterface.OnClickListener() {
+                                                                    public void onClick(DialogInterface dialog, int id) {
+                                                                        dialog.cancel();
+                                                                    }
+                                                                });
+
+                                                        AlertDialog alert11 = builder1.create();
+                                                        alert11.show();
+
+                                                    }catch(Exception e){
+                                                        e.printStackTrace();
+                                                    }
+                                                    }
+                                            }
                                         }
 
                                     }
@@ -1303,6 +1375,30 @@ public class SmsReceiver extends BroadcastReceiver{
             e.printStackTrace();
             return null;
         }catch (DecoderException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String decryptSymmetrically(byte[] message, byte[] key){
+
+        byte[] clearText = null;
+        try {
+            SecretKey secretKeySpec = new SecretKeySpec(key, "AES");
+
+            byte[] keyBytes = secretKeySpec.getEncoded();
+            String strKeyBytes = new String(Hex.encodeHex(keyBytes));
+
+            Log.i("DEC: KEY BYTES STR:", strKeyBytes);
+
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
+
+            clearText = cipher.doFinal(message);
+
+            return new String(clearText, "UTF-8");
+        }
+        catch(Exception e){
             e.printStackTrace();
             return null;
         }

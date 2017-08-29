@@ -60,6 +60,9 @@
             android:name=".InsertQRCodeManually"
             android:label="@string/title_activity_insert_qrcode_manually"
             android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".SendMessageActivity"
+            android:label="@string/title_activity_send_message"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

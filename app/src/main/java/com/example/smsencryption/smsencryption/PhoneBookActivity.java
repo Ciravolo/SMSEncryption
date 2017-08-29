@@ -3,12 +3,14 @@ package com.example.smsencryption.smsencryption;
 import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
@@ -46,8 +48,10 @@ public class PhoneBookActivity extends AppCompatActivity {
     private FABToolbarLayout morph;
     private String PRIVATE_KEY_FILE="privatekey.txt";
     private String myName="myself";
-    private String contactSelected = "";
-    private String phoneSelected = "";
+    private String contactSelectedSK = "";
+    private String phoneSelectedSK = "";
+    private String contactSelectedMessage = "";
+    private String phoneSelectedMessage = "";
 
 
     String SENT = "SMS_SENT";
@@ -314,18 +318,97 @@ public class PhoneBookActivity extends AppCompatActivity {
 
         if (extras!=null){
 
-            contactSelected = extras.getString("SESSION_USERNAME");
-            phoneSelected = extras.getString("SESSION_PHONE");
+            contactSelectedSK = extras.getString("SESSION_USERNAME");
+            phoneSelectedSK = extras.getString("SESSION_PHONE");
 
-            Log.i("I: contact selected:", contactSelected);
-            Log.i("I: phone selected:", phoneSelected);
+            contactSelectedMessage = extras.getString("MESSAGE_USERNAME");
+            phoneSelectedMessage = extras.getString("MESSAGE_PHONE");
 
-            startSessionKeyProtocol(contactSelected, phoneSelected);
+            if((contactSelectedSK!=null)&&(phoneSelectedSK!=null)){
+
+                Log.i("contactSelectedSK", contactSelectedSK);
+                Log.i("phoneSelectedSK", phoneSelectedSK);
+
+                startSessionKeyProtocol(contactSelectedSK, phoneSelectedSK);
+            }else{
+                if ((contactSelectedMessage!= null)&&(phoneSelectedMessage!=null)){
+                    //check if it has a session key established in the database
+
+                    Log.i("contactSelectedMessage", contactSelectedMessage);
+                    Log.i("phoneSelectedMessage", phoneSelectedMessage);
+
+                    SMSEncryptionDbHelper mDbHelper2 = new SMSEncryptionDbHelper(getBaseContext());
+
+                    SQLiteDatabase db2 = mDbHelper2.getReadableDatabase();
+
+                    String[] projection = {
+                            SMSEncryptionContract.Directory._ID,
+                            SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                            SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                            SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                            SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                            SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                    };
+
+                    // Filter results WHERE "title" = 'My Title'
+                    String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                    String[] selectionArgs = { phoneSelectedMessage };
+
+                    Cursor cursor3 = db2.query(
+                            SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                            projection,                               // The columns to return
+                            selection,                                // The columns for the WHERE clause
+                            selectionArgs,                            // The values for the WHERE clause
+                            null,                                     // don't group the rows
+                            null,                                     // don't filter by row groups
+                            null                                      // The sort order
+                    );
+
+                    List itemSessionKey = new ArrayList<>();
+
+                    while(cursor3.moveToNext()) {
+                        String sessionKey = cursor3.getString(cursor3.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
+                        Log.i("i:", "session key from database:"+sessionKey);
+                        itemSessionKey.add(sessionKey);
+                    }
+                    cursor3.close();
+
+                    if (itemSessionKey.get(0).toString().compareTo("none")==0){
+                        //send notification that it hasnt been set yet
+                        AlertDialog alertDialog = new AlertDialog.Builder(PhoneBookActivity.this).create();
+                        alertDialog.setTitle("Alert");
+                        alertDialog.setMessage("The session key has not been established yet. Please run the session key protocol first.");
+                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                });
+                        alertDialog.show();
+
+                    }
+                    else{
+                        //meaning a message could be sent from here using this sessionkey
+                        String sessionKey = itemSessionKey.get(0).toString();
+                        sendMessageWithSessionKey(sessionKey, phoneSelectedMessage);
+                    }
+                }
+            }
 
         }
 
     }
 
+
+    public void sendMessageWithSessionKey(String key, String phoneNumber){
+
+        //start the activity and send the parameters to it
+        Intent intentSendMessage = new Intent(PhoneBookActivity.this, SendMessageActivity.class);
+        intentSendMessage.putExtra("SESSION_KEY", key);
+        intentSendMessage.putExtra("RECEIVER_PHONENUMBER", phoneNumber);
+        startActivity(intentSendMessage);
+
+    }
 
     public void startSessionKeyProtocol(String user, String phoneNumber){
 
