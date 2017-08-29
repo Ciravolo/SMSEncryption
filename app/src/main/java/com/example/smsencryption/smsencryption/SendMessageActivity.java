@@ -119,13 +119,10 @@ public class SendMessageActivity extends AppCompatActivity {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
             encrypted = cipher.doFinal(message);
-            String strEncrypted = new String(encrypted, "UTF-8");
+            String strEncrypted = Base64.encodeToString(encrypted, Base64.DEFAULT);
             Log.i("Step 1: After enc:", strEncrypted);
-
             return strEncrypted;
-        } catch(UnsupportedEncodingException e){
-            e.printStackTrace();
-            return null;
+
         } catch(NoSuchAlgorithmException e){
             e.printStackTrace();
             return null;

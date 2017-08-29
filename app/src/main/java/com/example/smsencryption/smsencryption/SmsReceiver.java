@@ -1219,7 +1219,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                         }
                                         else{
-                                            Log.i("here", "protocol");
                                             if (protocolId.compareTo("M")==0){
                                                 //decrypt the message received and show it on a toast
                                                 Log.i("LAST MESSAGE: ", receivedMessage);
@@ -1259,7 +1258,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                 }
                                                 cursor.close();
 
-                                                if (itemSessionKey.get(0).toString().compareTo("none")!=0){
+                                                if (itemSessionKey.get(0).toString().compareTo("none")==0){
                                                     Toast.makeText(context, "Error: The session key has not been established.", Toast.LENGTH_SHORT).show();
                                                 }else{
                                                     try {
@@ -1268,7 +1267,9 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         byte[] sessionKeyBytes = Hex.decodeHex(sessionKeyStr.toCharArray());
                                                         byte[] receivedBytes = Hex.decodeHex(receivedMessage.toCharArray());
 
-                                                        String decryptedMessage = decryptSymmetric(receivedBytes, sessionKeyBytes);
+                                                        String decryptedMessage = decryptSymmetrically(receivedBytes, sessionKeyBytes);
+
+                                                        Toast.makeText(context, "Message: "+decryptedMessage, Toast.LENGTH_SHORT).show();
 
                                                         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
                                                         builder1.setMessage(decryptedMessage);
@@ -1397,7 +1398,7 @@ public class SmsReceiver extends BroadcastReceiver{
 
             clearText = cipher.doFinal(message);
 
-            return new String(clearText, "UTF-8");
+            return Base64.encodeBase64String(clearText);
         }
         catch(Exception e){
             e.printStackTrace();
