@@ -1,6 +1,8 @@
 package com.example.smsencryption.smsencryption;
 
 import android.app.PendingIntent;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -9,6 +11,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
+import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -82,8 +85,13 @@ public class SendMessageActivity extends AppCompatActivity {
                 else{
                     //send the message encrypted with the session key to the receiver
                     if ((sessionKey.compareTo("")!=0)&&(phoneNumber.compareTo("")!=0)){
+
+                        //obtain my phone number
+                        TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+                        String myPhoneNumber = tMgr.getLine1Number();
+
                         //if the parameters have been set correctly then send the message
-                        sendEncryptedSMS(phoneNumber, sessionKey, txtMessageToSend.getText().toString());
+                        sendEncryptedSMS(phoneNumber, sessionKey, txtMessageToSend.getText().toString(), myPhoneNumber);
                     }
                 }
 
@@ -108,7 +116,7 @@ public class SendMessageActivity extends AppCompatActivity {
         Log.i("myphoneNumber query:", myPhoneNumber);
 
 
-        String selection = SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + " = ? OR "+ SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + "= ?";
+        String selection = SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + " IN ( ? , ? ) ";
         String[] selectionArgs = { phoneNumber , myPhoneNumber};
 
         Cursor cursor1 = db1.query(
@@ -153,7 +161,9 @@ public class SendMessageActivity extends AppCompatActivity {
 
     }
 
-    private void sendEncryptedSMS(String phoneNumber, String sessionKey, String plainText){
+    private void sendEncryptedSMS(String phoneNumber, String sessionKey, String plainText, String myPhoneNumber){
+
+        Utils u = new Utils();
 
         Intent sendReceiverPhoneNumber = new Intent("sendReceiverPhone");
         sendReceiverPhoneNumber.putExtra("receiverphonenumber", phoneNumber);
@@ -179,6 +189,18 @@ public class SendMessageActivity extends AppCompatActivity {
 
             SmsManager sms = SmsManager.getDefault();
             Toast.makeText(getApplicationContext(), "Phone number to send:"+phoneNumber, Toast.LENGTH_LONG).show();
+
+            SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(getBaseContext());
+            SQLiteDatabase dbw = mDbHelper.getWritableDatabase();
+            ContentValues values = new ContentValues();
+
+            values.put(SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER, myPhoneNumber);
+            values.put(SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER, phoneNumber);
+            values.put(SMSEncryptionContract.Messages.COLUMN_CONTENT, plainText);
+            values.put(SMSEncryptionContract.Messages.COLUMN_TIME, u.getDateTime());
+
+            //Insert the row
+            long newRowId = dbw.insert(SMSEncryptionContract.Messages.TABLE_NAME, null, values);
 
             sms.sendTextMessage(phoneNumber, null, messageEncrypted, sentPI, deliveredPI);
         } catch(Exception e){
