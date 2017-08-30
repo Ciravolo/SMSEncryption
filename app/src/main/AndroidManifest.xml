@@ -40,6 +40,7 @@
             android:enabled="true">
             <intent-filter>
                 <action android:name="my.action.string" />
+                <action android:name="sendReceiverPhone" />
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>

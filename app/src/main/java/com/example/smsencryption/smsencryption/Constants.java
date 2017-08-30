@@ -37,6 +37,8 @@ public class Constants {
 
     private static String hisContactName = "";
 
+    private static String receiverPhoneNumber = "none";
+
     public static int getNumberMessages(){
         return numberMessages;
     }
@@ -106,5 +108,9 @@ public class Constants {
     }
 
     public static String getHisContactName(){ return hisContactName; }
+
+    public static String getReceiverPhoneNumber(){ return receiverPhoneNumber; }
+
+    public static void setReceiverPhoneNumber(String phone){ receiverPhoneNumber = phone; }
 
 }

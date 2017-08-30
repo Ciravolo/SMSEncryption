@@ -83,6 +83,10 @@ public class SendMessageActivity extends AppCompatActivity {
 
     private void sendEncryptedSMS(String phoneNumber, String sessionKey, String plainText){
 
+        Intent sendReceiverPhoneNumber = new Intent("sendReceiverPhone");
+        sendReceiverPhoneNumber.putExtra("receiverphonenumber", phoneNumber);
+        sendBroadcast(sendReceiverPhoneNumber);
+
         try{
 
             byte[] inputByte = plainText.getBytes("UTF-8");

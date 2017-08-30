@@ -8,30 +8,41 @@
     tools:context="com.example.smsencryption.smsencryption.SendMessageActivity"
     tools:showIn="@layout/activity_send_message">
 
-
-    <TextView
-        android:id="@+id/lblInsertMessage"
+    <ListView
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="80dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
-        android:layout_marginBottom="30dp"
-        android:text="Enter the message to be sent" />
+        android:layout_height="500dp"
+        android:id="@+id/messages_view"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 
-    <EditText
-        android:id="@+id/txtMessageToSend"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="95dp"
-        android:ems="10"
-        android:inputType="textMultiLine" />
+    <LinearLayout
+        android:id="@+id/input_bar"
+        android:layout_width="fill_parent"
+        android:layout_height="75dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/white"
+        android:orientation="horizontal" >
 
-    <Button
-        android:id="@+id/btnSendMessage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/txtMessageToSend"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
-        android:text="Send" />
+        <EditText
+            android:id="@+id/txtMessageToSend"
+            android:layout_weight="0.7"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/btnSendMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+        android:layout_marginRight="20dp"
+        android:text="Send"/>
+
+    </LinearLayout>
+
+
 
 </RelativeLayout>

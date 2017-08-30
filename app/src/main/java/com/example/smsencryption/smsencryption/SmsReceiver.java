@@ -50,6 +50,7 @@ import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,7 @@ public class SmsReceiver extends BroadcastReceiver{
     private boolean sessionErrorKey = false;
     private String originatingPhoneNumber = "";
     private String contactName = "default";
+    private String contactPhoneNumber = "default";
     private String errorReason = "";
 
     String SENT_SMS_FLAG = "SENT_SMS_FLAG";
@@ -93,6 +95,10 @@ public class SmsReceiver extends BroadcastReceiver{
 
         if (action.equals("my.action.string")){
             Constants.setHisContactName(intent.getExtras().getString("contactname"));
+        }
+
+        if (action.equals("sendReceiverPhone")){
+            Constants.setReceiverPhoneNumber(intent.getExtras().getString("receiverphonenumber"));
         }
 
         if (bundle != null) {
@@ -363,6 +369,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 Log.i("I:", "it is not saved in the database, first time to record it.");
                                                                 //todo: It is not saved in the db so save the key of Bob
                                                                 //save values on the database
+
+                                                                Log.i("I:", "contactName to be saved:"+ Constants.getHisContactName());
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, Constants.getHisContactName());
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
@@ -1220,7 +1228,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                         }
                                         else{
                                             if (protocolId.compareTo("M")==0){
-                                                //decrypt the message received and show it on a toast
+                                                //decrypt the message received and save it on the db
                                                 Log.i("LAST MESSAGE: ", receivedMessage);
 
                                                 SMSEncryptionDbHelper mDbHelperSK = new SMSEncryptionDbHelper(context);
@@ -1262,6 +1270,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     Toast.makeText(context, "Error: The session key has not been established.", Toast.LENGTH_SHORT).show();
                                                 }else{
                                                     try {
+
+                                                        //session key obtained from the db
                                                         String sessionKeyStr = itemSessionKey.get(0).toString();
 
                                                         byte[] sessionKeyBytes = Hex.decodeHex(sessionKeyStr.toCharArray());
@@ -1270,21 +1280,27 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         String decryptedMessage = decryptSymmetrically(receivedBytes, sessionKeyBytes);
 
                                                         Toast.makeText(context, "Message: "+decryptedMessage, Toast.LENGTH_SHORT).show();
+                                                        // this message should be inserted into the database
 
-                                                        AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
-                                                        builder1.setMessage(decryptedMessage);
-                                                        builder1.setCancelable(true);
+                                                        Utils utilities = new Utils();
 
-                                                        builder1.setPositiveButton(
-                                                                "OK",
-                                                                new DialogInterface.OnClickListener() {
-                                                                    public void onClick(DialogInterface dialog, int id) {
-                                                                        dialog.cancel();
-                                                                    }
-                                                                });
+                                                        SQLiteDatabase dbw = mDbHelperSK.getWritableDatabase();
+                                                        ContentValues values = new ContentValues();
+                                                        Log.i("I:", "it is not saved in the database, first time to record it.");
+                                                        //todo: It is not saved in the db so save the key of Bob
+                                                        //save values on the database
 
-                                                        AlertDialog alert11 = builder1.create();
-                                                        alert11.show();
+                                                        Log.i("I:", "contactName to be saved:"+ Constants.getHisContactName());
+
+                                                        values.put(SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER, originatingPhoneNumber);
+                                                        values.put(SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER, Constants.getReceiverPhoneNumber());
+                                                        values.put(SMSEncryptionContract.Messages.COLUMN_CONTENT, decryptedMessage);
+                                                        values.put(SMSEncryptionContract.Messages.COLUMN_TIME, utilities.getDateTime());
+
+                                                        //Insert the row
+                                                        long newRowId = dbw.insert(SMSEncryptionContract.Messages.TABLE_NAME, null, values);
+
+                                                        //TODO: need to erase the message that arrived here in the SMS inbox
 
                                                     }catch(Exception e){
                                                         e.printStackTrace();
