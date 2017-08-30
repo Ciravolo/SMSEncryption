@@ -3,6 +3,8 @@ package com.example.smsencryption.smsencryption;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,13 +14,19 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
+
+import com.example.smsencryption.smsencryption.database.SMSEncryptionContract;
+import com.example.smsencryption.smsencryption.database.SMSEncryptionDbHelper;
 
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -30,13 +38,16 @@ import javax.crypto.spec.SecretKeySpec;
 public class SendMessageActivity extends AppCompatActivity {
 
     private String sessionKey = "";
-    private String phoneNumber= "";
+    private String phoneNumber = "";
+    private String myPhoneNumber = "";
 
     private Button btnSendMessage;
     private EditText txtMessageToSend;
 
     private String SENT = "SMS_SENT";
     private String DELIVERED = "SMS_DELIVERED";
+
+    private ListView list;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +57,7 @@ public class SendMessageActivity extends AppCompatActivity {
         Bundle bundle = this.getIntent().getExtras();
         sessionKey = bundle.getString("SESSION_KEY");
         phoneNumber = bundle.getString("RECEIVER_PHONENUMBER");
+        myPhoneNumber = bundle.getString("MYPHONENUMBER");
 
         btnSendMessage = (Button) findViewById(R.id.btnSendMessage);
         txtMessageToSend = (EditText) findViewById(R.id.txtMessageToSend);
@@ -78,6 +90,66 @@ public class SendMessageActivity extends AppCompatActivity {
 
             }
         });
+
+        SMSEncryptionDbHelper mDbHelper1 = new SMSEncryptionDbHelper(getBaseContext());
+        SQLiteDatabase db1 = mDbHelper1.getReadableDatabase();
+
+        String[] projection1 = {
+                SMSEncryptionContract.Messages._ID,
+                SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER,
+                SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER,
+                SMSEncryptionContract.Messages.COLUMN_CONTENT,
+                SMSEncryptionContract.Messages.COLUMN_TIME
+        };
+
+        // Filter results WHERE "title" = 'My Title'
+
+        Log.i("phoneNumber query:", phoneNumber);
+        Log.i("myphoneNumber query:", myPhoneNumber);
+
+
+        String selection = SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + " = ? OR "+ SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + "= ?";
+        String[] selectionArgs = { phoneNumber , myPhoneNumber};
+
+        Cursor cursor1 = db1.query(
+                SMSEncryptionContract.Messages.TABLE_NAME,// The table to query
+                projection1,                               // The columns to return
+                selection,                                // The columns for the WHERE clause
+                selectionArgs,                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                SMSEncryptionContract.Messages.COLUMN_TIME+" ASC"    // The sort order
+        );
+
+        List itemSenderPhoneNumber = new ArrayList<>();
+        List itemMsgs = new ArrayList<>();
+        List itemTime = new ArrayList<>();
+
+        while(cursor1.moveToNext()) {
+            String senderPhoneNumber = cursor1.getString(cursor1.getColumnIndex(SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER));
+            Log.i("i:", "sender:"+senderPhoneNumber);
+            itemSenderPhoneNumber.add(senderPhoneNumber);
+
+            String msg = cursor1.getString(cursor1.getColumnIndex(SMSEncryptionContract.Messages.COLUMN_CONTENT));
+            Log.i("i:", "message: "+msg);
+            itemMsgs.add(msg);
+
+            String time = cursor1.getString(cursor1.getColumnIndex(SMSEncryptionContract.Messages.COLUMN_TIME));
+            Log.i("i:", "message: "+time);
+            itemTime.add(time);
+        }
+        cursor1.close();
+
+        list = (ListView)findViewById(R.id.messages_view);
+
+        List<Message> listMessages = new ArrayList<Message>();
+
+        for (int i =0; i<itemMsgs.size(); i++){
+            listMessages.add(new Message(itemMsgs.get(i).toString(), itemSenderPhoneNumber.get(i).toString(), itemTime.get(i).toString()));
+        }
+
+        MessageAdapter adapter = new MessageAdapter(this, listMessages);
+        list.setAdapter(adapter);
 
     }
 

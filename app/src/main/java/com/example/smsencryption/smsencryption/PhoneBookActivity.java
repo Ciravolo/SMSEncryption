@@ -390,7 +390,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                     else{
                         //meaning a message could be sent from here using this sessionkey
                         String sessionKey = itemSessionKey.get(0).toString();
-                        sendMessageWithSessionKey(sessionKey, phoneSelectedMessage);
+                        sendMessageWithSessionKey(sessionKey, phoneSelectedMessage, myPhoneNumber);
                     }
                 }
             }
@@ -400,12 +400,13 @@ public class PhoneBookActivity extends AppCompatActivity {
     }
 
 
-    public void sendMessageWithSessionKey(String key, String phoneNumber){
+    public void sendMessageWithSessionKey(String key, String phoneNumber, String myPhoneNumber){
 
         //start the activity and send the parameters to it
         Intent intentSendMessage = new Intent(PhoneBookActivity.this, SendMessageActivity.class);
         intentSendMessage.putExtra("SESSION_KEY", key);
         intentSendMessage.putExtra("RECEIVER_PHONENUMBER", phoneNumber);
+        intentSendMessage.putExtra("MYPHONENUMBER", myPhoneNumber);
         startActivity(intentSendMessage);
 
     }
