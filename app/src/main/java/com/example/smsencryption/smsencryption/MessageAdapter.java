@@ -78,7 +78,7 @@ public class MessageAdapter extends BaseAdapter implements ListAdapter{
 
         // set the elements' contents
         holder.bodyView.setText(message.getText());
-        holder.senderView.setText(message.getName());
+        holder.senderView.setText("from: "+message.getName()+"\n at: "+message.getTime());
 
         return convertView;
 
