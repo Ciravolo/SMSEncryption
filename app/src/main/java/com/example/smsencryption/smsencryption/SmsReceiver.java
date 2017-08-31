@@ -18,6 +18,7 @@ import android.provider.Telephony;
 import android.support.v7.app.AlertDialog;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -98,6 +99,7 @@ public class SmsReceiver extends BroadcastReceiver{
         }
 
         if (action.equals("sendReceiverPhone")){
+            Log.i("I:::::", intent.getExtras().getString("receiverphonenumber"));
             Constants.setReceiverPhoneNumber(intent.getExtras().getString("receiverphonenumber"));
         }
 
@@ -1299,6 +1301,61 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         //Insert the row
                                                         long newRowId = dbw.insert(SMSEncryptionContract.Messages.TABLE_NAME, null, values);
+
+
+                                                        SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+                                                        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                                                        String[] projectionDb = {
+                                                                SMSEncryptionContract.Directory._ID,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                                SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                                                        };
+
+                                                        // Filter results WHERE "title" = 'My Title'
+                                                        String selectionDb = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                        String[] selectionArgsDb = { originatingPhoneNumber };
+
+                                                        Cursor cursorDb = db.query(
+                                                                SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                projectionDb,                               // The columns to return
+                                                                selectionDb,                                // The columns for the WHERE clause
+                                                                selectionArgsDb,                            // The values for the WHERE clause
+                                                                null,                                     // don't group the rows
+                                                                null,                                     // don't filter by row groups
+                                                                null                                      // The sort order
+                                                        );
+
+                                                        List itemSK = new ArrayList<>();
+
+                                                        while(cursorDb.moveToNext()) {
+                                                            String sk = cursorDb.getString(cursorDb.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
+                                                            Log.i("i:", "intent: session key from database:"+sk);
+                                                            itemSK.add(sk);
+
+                                                        }
+                                                        cursor.close();
+
+
+                                                        //query all the data neeeded to refresh the sendmessage activity that needs 3 params:
+                                                        //sessionKey = bundle.getString("SESSION_KEY");
+                                                        //phoneNumber = bundle.getString("RECEIVER_PHONENUMBER"); yo
+                                                        //myPhoneNumber = bundle.getString("MYPHONENUMBER"); originatingPhoneNumber
+
+                                                        //send the data in an intent
+                                                        Intent i = new Intent(context, SendMessageActivity.class);
+
+                                                        TelephonyManager tMgr = (TelephonyManager)context.getSystemService(context.TELEPHONY_SERVICE);
+                                                        String myPhoneNumber = tMgr.getLine1Number();
+
+                                                        i.putExtra("SESSION_KEY", itemSK.get(0).toString());
+                                                        i.putExtra("RECEIVER_PHONENUMBER", originatingPhoneNumber);
+                                                        i.putExtra("MYPHONENUMBER", myPhoneNumber);
+                                                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                        context.startActivity(i);
 
                                                         //TODO: need to erase the message that arrived here in the SMS inbox
 

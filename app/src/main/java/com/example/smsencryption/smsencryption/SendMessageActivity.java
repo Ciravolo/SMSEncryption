@@ -161,6 +161,18 @@ public class SendMessageActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onNewIntent(Intent intent){
+        Bundle extras = intent.getExtras();
+        Intent msgIntent = new Intent(this, SendMessageActivity.class);
+        msgIntent.putExtras(extras);
+        startActivity(msgIntent);
+        finish();
+        return;
+    }
+
+
+
     private void sendEncryptedSMS(String phoneNumber, String sessionKey, String plainText, String myPhoneNumber){
 
         Utils u = new Utils();
@@ -203,6 +215,16 @@ public class SendMessageActivity extends AppCompatActivity {
             long newRowId = dbw.insert(SMSEncryptionContract.Messages.TABLE_NAME, null, values);
 
             sms.sendTextMessage(phoneNumber, null, messageEncrypted, sentPI, deliveredPI);
+
+            //recall the activity to show the messages refreshed
+            Intent i = new Intent(this, SendMessageActivity.class);
+
+            i.putExtra("SESSION_KEY", sessionKey);
+            i.putExtra("RECEIVER_PHONENUMBER", phoneNumber);
+            i.putExtra("MYPHONENUMBER", myPhoneNumber);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            this.startActivity(i);
+
         } catch(Exception e){
             Toast.makeText(getApplicationContext(), "SMS Failed, please try again later", Toast.LENGTH_LONG).show();
             e.printStackTrace();
