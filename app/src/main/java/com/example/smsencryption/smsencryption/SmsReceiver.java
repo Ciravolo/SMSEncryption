@@ -1,12 +1,9 @@
 package com.example.smsencryption.smsencryption;
 
-import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
@@ -15,7 +12,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Telephony;
-import android.support.v7.app.AlertDialog;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
@@ -29,41 +25,28 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import static android.content.Context.ACTIVITY_SERVICE;
 
 /**
  * Created by joana on 4/16/17.
@@ -78,7 +61,6 @@ public class SmsReceiver extends BroadcastReceiver{
     private boolean sessionErrorKey = false;
     private String originatingPhoneNumber = "";
     private String contactName = "default";
-    private String contactPhoneNumber = "default";
     private String errorReason = "";
 
     String SENT_SMS_FLAG = "SENT_SMS_FLAG";
@@ -1339,13 +1321,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         }
                                                         cursor.close();
 
-
-                                                        //query all the data neeeded to refresh the sendmessage activity that needs 3 params:
-                                                        //sessionKey = bundle.getString("SESSION_KEY");
-                                                        //phoneNumber = bundle.getString("RECEIVER_PHONENUMBER"); yo
-                                                        //myPhoneNumber = bundle.getString("MYPHONENUMBER"); originatingPhoneNumber
-
-                                                        //send the data in an intent
                                                         Intent i = new Intent(context, SendMessageActivity.class);
 
                                                         TelephonyManager tMgr = (TelephonyManager)context.getSystemService(context.TELEPHONY_SERVICE);
@@ -1357,7 +1332,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                                         context.startActivity(i);
 
-                                                        //TODO: need to erase the message that arrived here in the SMS inbox
 
                                                     }catch(Exception e){
                                                         e.printStackTrace();
