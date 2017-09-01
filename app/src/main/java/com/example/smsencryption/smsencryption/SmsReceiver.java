@@ -152,6 +152,140 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                         try {
 
+                                            SMSEncryptionDbHelper mDbHelperUpdate = new SMSEncryptionDbHelper(context);
+
+                                            SQLiteDatabase dbu = mDbHelperUpdate.getReadableDatabase();
+
+                                            // Check if the sender is already registered
+
+                                            String[] projection = {
+                                                    SMSEncryptionContract.Directory._ID,
+                                                    SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                    SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                    SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                    SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+
+                                            };
+
+                                            // Filter results WHERE "title" = 'My Title'
+                                            String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                            String[] selectionArgs = { originatingPhoneNumber };
+
+                                            Cursor cursorUpdate = dbu.query(
+                                                    SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                    projection,                               // The columns to return
+                                                    selection,                                // The columns for the WHERE clause
+                                                    selectionArgs,                            // The values for the WHERE clause
+                                                    null,                                     // don't group the rows
+                                                    null,                                     // don't filter by row groups
+                                                    null                                      // The sort order
+                                            );
+
+                                            List userIds = new ArrayList<>();
+                                            List ltkList = new ArrayList<>();
+
+                                            while(cursorUpdate.moveToNext()) {
+                                                long userId = cursorUpdate.getLong(
+                                                        cursorUpdate.getColumnIndexOrThrow(SMSEncryptionContract.Directory._ID));
+                                                userIds.add(userId);
+
+                                                String ltk = cursorUpdate.getString(
+                                                        cursorUpdate.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                                                ltkList.add(ltk);
+                                            }
+                                            cursorUpdate.close();
+
+                                            if (userIds.size()!=0){
+
+                                                //use this long term key obtained from db
+                                                Constants.setW(ltkList.get(0).toString());
+
+                                                //obtain my public key from db
+                                                TelephonyManager tMgr = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
+                                                String myPhoneNumber = tMgr.getLine1Number();
+
+                                                SMSEncryptionDbHelper mDbHelperMyPK = new SMSEncryptionDbHelper(context);
+
+                                                SQLiteDatabase dbpk = mDbHelperMyPK.getReadableDatabase();
+
+                                                // Check if the sender is already registered
+
+                                                String[] projectionpk = {
+                                                        SMSEncryptionContract.Directory._ID,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                        SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                        SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                        SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+
+                                                };
+
+                                                // Filter results WHERE "title" = 'My Title'
+                                                String selectionpk = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                String[] selectionArgspk = { myPhoneNumber };
+
+                                                Cursor cursorpk = dbpk.query(
+                                                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                        projectionpk,                               // The columns to return
+                                                        selectionpk,                                // The columns for the WHERE clause
+                                                        selectionArgspk,                            // The values for the WHERE clause
+                                                        null,                                     // don't group the rows
+                                                        null,                                     // don't filter by row groups
+                                                        null                                      // The sort order
+                                                );
+
+                                                List mypkList = new ArrayList<>();
+
+                                                while(cursorpk.moveToNext()) {
+
+                                                    String mypk = cursorpk.getString(
+                                                            cursorpk.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                                                    mypkList.add(mypk);
+                                                }
+                                                cursorpk.close();
+
+                                                byte[] bytesMyPublicKey = Hex.decodeHex(mypkList.get(0).toString().toCharArray());
+
+                                                PublicKey myPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesMyPublicKey));
+
+                                                Constants.setMyPublicKey(myPublicKey);
+
+                                                //clear or update the session key field to "none"
+
+                                                ContentValues valuesSK = new ContentValues();
+
+                                                valuesSK.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, "none");
+
+                                                // Which row to update, based on the title
+                                                String selectionUpdateSK = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                String[] selectionArgsUpdateSK = { originatingPhoneNumber };
+
+                                                int count = dbpk.update(
+                                                        SMSEncryptionContract.Directory.TABLE_NAME,
+                                                        valuesSK,
+                                                        selectionUpdateSK,
+                                                        selectionArgsUpdateSK);
+
+                                                Log.i("I:", "Rows updated:"+count);
+
+                                                //delete the conversation from the message table from this user in my db
+                                                SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+                                                SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+                                                int countDelete = db.delete(
+                                                        SMSEncryptionContract.Messages.TABLE_NAME,
+                                                        SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER + "="+ originatingPhoneNumber +
+                                                                " OR "+ SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + "=" +
+                                                                originatingPhoneNumber,
+                                                        null
+                                                );
+
+                                                Log.i("deleted:", countDelete + "rows");
+
+
+                                            }
+
                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
 
                                             byte[] bytesHisNonce = Hex.decodeHex(Constants.getHisNonce().toCharArray());
@@ -231,6 +365,54 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                     if (!infoToDecrypt.isEmpty()) {
 
+
+                                                        //check if the W has already been inserted before in the db
+
+                                                        SMSEncryptionDbHelper mDbHelperUpdate = new SMSEncryptionDbHelper(context);
+
+                                                        SQLiteDatabase dbu = mDbHelperUpdate.getReadableDatabase();
+
+                                                        // Check if the sender is already registered
+
+                                                        String[] projectionUpdateLTK = {
+                                                                SMSEncryptionContract.Directory._ID,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                                SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+
+                                                        };
+
+                                                        // Filter results WHERE "title" = 'My Title'
+                                                        String selectionUpdateLTK = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                        String[] selectionArgsUpdateLTK = { originatingPhoneNumber };
+
+                                                        Cursor cursorUpdate = dbu.query(
+                                                                SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                projectionUpdateLTK,                               // The columns to return
+                                                                selectionUpdateLTK,                                // The columns for the WHERE clause
+                                                                selectionArgsUpdateLTK,                            // The values for the WHERE clause
+                                                                null,                                     // don't group the rows
+                                                                null,                                     // don't filter by row groups
+                                                                null                                      // The sort order
+                                                        );
+
+                                                        List ltkList = new ArrayList<>();
+
+                                                        while(cursorUpdate.moveToNext()) {
+                                                            String ltk = cursorUpdate.getString(
+                                                                    cursorUpdate.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                                                            ltkList.add(ltk);
+                                                        }
+                                                        cursorUpdate.close();
+
+                                                        if (ltkList.size()>0) {
+
+                                                            //use this long term key obtained from db
+                                                            Constants.setW(ltkList.get(0).toString());
+                                                        }
+
                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
                                                         byte[] hisNoncePart = Arrays.copyOfRange(receivedBytes, 0, 16);
                                                         byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 16, receivedBytes.length);
@@ -244,6 +426,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         byte[] salt = generateHashFromNonces(Constants.getMyNonce(), Constants.getHisNonce());
 
                                                         Utils u2 = new Utils();
+
+                                                        Log.i("b4 deriving the W:", Constants.getW());
 
                                                         byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 1, 128);
 
@@ -305,7 +489,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             String messageToEncrypt = Constants.getHisNonce() + strMyPublicKey + strHisPublicKey;
                                                             byte[] messageBytesToEncrypt = Hex.decodeHex(messageToEncrypt.toCharArray());
 
-                                                            //TODO: alice saves the key for bob before sending the P:2 message
+                                                            //alice saves the key for bob before sending the P:2 message
                                                             SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
 
                                                             SQLiteDatabase db = mDbHelper.getReadableDatabase();

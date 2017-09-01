@@ -139,12 +139,88 @@ public class PhoneBookActivity extends AppCompatActivity {
                 //start the protocol with user 1
                 Intent intentStart = new Intent(PhoneBookActivity.this, AddContact.class);
                 startActivity(intentStart);
+                finish();
             }
         });
 
         optionUpdateKeys.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                TelephonyManager tMgr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+                String myPhoneNumber = tMgr.getLine1Number();
+
+                //get all my contacts numbers
+
+                SMSEncryptionDbHelper mDbHelperContacts = new SMSEncryptionDbHelper(getBaseContext());
+
+                SQLiteDatabase dbContacts = mDbHelperContacts.getReadableDatabase();
+
+                String[] projection = {
+                        SMSEncryptionContract.Directory._ID,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                        SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                        SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                };
+
+                // Filter results WHERE "title" = 'My Title'
+                String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " != ?";
+                String[] selectionArgs = { myPhoneNumber };
+
+                Cursor cursorPhoneNumber = dbContacts.query(
+                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                        projection,                               // The columns to return
+                        selection,                                // The columns for the WHERE clause
+                        selectionArgs,                            // The values for the WHERE clause
+                        null,                                     // don't group the rows
+                        null,                                     // don't filter by row groups
+                        null                                      // The sort order
+                );
+
+                List itemPhoneNumbers = new ArrayList<>();
+                List itemNames = new ArrayList<>();
+
+                while(cursorPhoneNumber.moveToNext()) {
+                    String itemPhoneNumber = cursorPhoneNumber.getString(
+                            cursorPhoneNumber.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER));
+                    itemPhoneNumbers.add(itemPhoneNumber);
+
+                    String itemName = cursorPhoneNumber.getString(
+                            cursorPhoneNumber.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_NAME_NAME));
+                    itemNames.add(itemName);
+                }
+                cursorPhoneNumber.close();
+
+                if (itemPhoneNumbers.size()>0){
+
+                    for (int i = 0; i< itemPhoneNumbers.size(); i++){
+                        //for everyone of these contacts, send a nonce with the correspondent :P:0 ending
+                        Utils u = new Utils();
+                        String nonce = u.generateNonce();
+                        Constants.setMyNonce(nonce);
+                        unsetSessionKey(itemPhoneNumbers.get(i).toString(), getBaseContext());
+                        deleteMessagesFrom(itemPhoneNumbers.get(i).toString(), getBaseContext());
+                        sendSMS(itemNames.get(i).toString(), itemPhoneNumbers.get(i).toString(), nonce+":P:0");
+                        finish();
+                    }
+
+                }
+                else{
+                    //send a notification saying that he doesnt have any contact added so he should add a contact first
+                    AlertDialog alertDialog = new AlertDialog.Builder(PhoneBookActivity.this).create();
+                    alertDialog.setTitle("Alert");
+                    alertDialog.setMessage("Cannot update your keys because you have no shared keys with other users, please add a new contact first.");
+                    alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            });
+                    alertDialog.show();
+                    finish();
+                }
 
             }
         });
@@ -382,21 +458,62 @@ public class PhoneBookActivity extends AppCompatActivity {
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
+                                        finish();
                                     }
                                 });
                         alertDialog.show();
-
                     }
                     else{
                         //meaning a message could be sent from here using this sessionkey
                         String sessionKey = itemSessionKey.get(0).toString();
                         sendMessageWithSessionKey(sessionKey, phoneSelectedMessage, myPhoneNumber);
+                        finish();
                     }
                 }
             }
 
         }
 
+    }
+
+    public void unsetSessionKey(String phoneNumber, Context context){
+
+        SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, "none");
+
+        // Which row to update, based on the title
+        String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+        String[] selectionArgsUpdate = { phoneNumber };
+
+        int count = db.update(
+                SMSEncryptionContract.Directory.TABLE_NAME,
+                values,
+                selectionUpdate,
+                selectionArgsUpdate);
+
+        Log.i("I:", "Rows updated:"+count);
+
+    }
+
+    public void deleteMessagesFrom(String phoneNumber, Context context){
+
+        SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        int count = db.delete(
+                SMSEncryptionContract.Messages.TABLE_NAME,
+                SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER + "="+ phoneNumber +
+                        " OR "+ SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER + "=" +
+                        phoneNumber,
+                null
+        );
+
+        Log.i("deleted:", count + "rows");
     }
 
 
@@ -422,7 +539,7 @@ public class PhoneBookActivity extends AppCompatActivity {
         nonceGenerated = nonceGenerated+ ":S:0";
         //last indicator :S:0 to say it is the first communication in the session key protocol
         sendSMS(user,phoneNumber,nonceGenerated);
-
+        finish();
     }
 
 
