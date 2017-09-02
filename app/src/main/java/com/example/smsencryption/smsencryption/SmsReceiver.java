@@ -1239,9 +1239,10 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         }
                                                                         cursor.close();
 
-                                                                        if (Constants.getW().compareTo("none")==0){
+                                                                        if (itemLTK.size()>0){
                                                                             //meaning that it is not set
                                                                             Constants.setW(itemLTK.get(0).toString());
+                                                                            Log.i("setting W to:", Constants.getW());
                                                                         }
 
                                                                         //second part is accesible via symmetric encryption with the session key obtained in the step before

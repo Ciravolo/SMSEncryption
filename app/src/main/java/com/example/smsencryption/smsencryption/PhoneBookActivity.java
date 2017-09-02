@@ -203,7 +203,6 @@ public class PhoneBookActivity extends AppCompatActivity {
                         unsetSessionKey(itemPhoneNumbers.get(i).toString(), getBaseContext());
                         deleteMessagesFrom(itemPhoneNumbers.get(i).toString(), getBaseContext());
                         sendSMS(itemNames.get(i).toString(), itemPhoneNumbers.get(i).toString(), nonce+":P:0");
-                        finish();
                     }
 
                 }
