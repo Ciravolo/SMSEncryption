@@ -165,9 +165,37 @@ public class PhoneBookActivity extends AppCompatActivity {
                         SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
                 };
 
-                // Filter results WHERE "title" = 'My Title'
+
+
                 String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " != ?";
                 String[] selectionArgs = { myPhoneNumber };
+
+
+                String selectionMyself = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                String[] selectionArgsMyself = { myPhoneNumber };
+
+                Cursor cursorMyself = dbContacts.query(
+                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                        projection,                               // The columns to return
+                        selectionMyself,                                // The columns for the WHERE clause
+                        selectionArgsMyself,                            // The values for the WHERE clause
+                        null,                                     // don't group the rows
+                        null,                                     // don't filter by row groups
+                        null                                      // The sort order
+                );
+
+
+                List itemMyPks = new ArrayList<>();
+
+                while(cursorMyself.moveToNext()) {
+                    String pk = cursorMyself.getString(
+                            cursorMyself.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                    Log.i("I:::::::","My public key before generating new:"+ pk);
+                    itemMyPks.add(pk);
+
+                }
+                cursorMyself.close();
+
 
                 Cursor cursorPhoneNumber = dbContacts.query(
                         SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
@@ -197,12 +225,70 @@ public class PhoneBookActivity extends AppCompatActivity {
 
                     for (int i = 0; i< itemPhoneNumbers.size(); i++){
                         //for everyone of these contacts, send a nonce with the correspondent :P:0 ending
+
                         Utils u = new Utils();
                         String nonce = u.generateNonce();
                         Constants.setMyNonce(nonce);
+
+                        //also set my W from the database with this specific user
+
+                        String[] projection2 = {
+                                SMSEncryptionContract.Directory._ID,
+                                SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                        };
+
+                        // Filter results WHERE "title" = 'My Title'
+                        String selection2 = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                        String[] selectionArgs2 = { itemPhoneNumbers.get(i).toString() };
+
+                        Cursor cursorW = dbContacts.query(
+                                SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                projection2,                               // The columns to return
+                                selection2,                                // The columns for the WHERE clause
+                                selectionArgs2,                            // The values for the WHERE clause
+                                null,                                     // don't group the rows
+                                null,                                     // don't filter by row groups
+                                null                                      // The sort order
+                        );
+
+                        List itemLtk = new ArrayList<>();
+
+                        while(cursorW.moveToNext()) {
+                            String ltk = cursorW.getString(
+                                    cursorW.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                            itemLtk.add(ltk);
+                        }
+                        cursorW.close();
+
+                        if (itemLtk.size()>0){
+
+                            Constants.setW(itemLtk.get(0).toString());
+
+                            //update my ltk for this one
+                            ContentValues valuesW = new ContentValues();
+
+                            valuesW.put(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY, itemLtk.get(0).toString());
+
+                            // Which row to update, based on the title
+                            String selectionUpdateW = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                            String[] selectionArgsUpdateW = { myPhoneNumber };
+
+                            int count = dbContacts.update(
+                                    SMSEncryptionContract.Directory.TABLE_NAME,
+                                    valuesW,
+                                    selectionUpdateW,
+                                    selectionArgsUpdateW);
+
+
+                        }
                         unsetSessionKey(itemPhoneNumbers.get(i).toString(), getBaseContext());
                         deleteMessagesFrom(itemPhoneNumbers.get(i).toString(), getBaseContext());
                         sendSMS(itemNames.get(i).toString(), itemPhoneNumbers.get(i).toString(), nonce+":P:0");
+
                     }
 
                 }
@@ -404,7 +490,115 @@ public class PhoneBookActivity extends AppCompatActivity {
                 Log.i("contactSelectedSK", contactSelectedSK);
                 Log.i("phoneSelectedSK", phoneSelectedSK);
 
+                //TODO: print state of my data in database before
+
+                SMSEncryptionDbHelper mDbHelperCheck = new SMSEncryptionDbHelper(getBaseContext());
+
+                SQLiteDatabase dbcheck = mDbHelperCheck.getReadableDatabase();
+
+                String[] projectionCheck = {
+                        SMSEncryptionContract.Directory._ID,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                        SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                        SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                        SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+                };
+
+                // Filter results WHERE "title" = 'My Title'
+                String selectionCheck = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                String[] selectionArgsCheck = { phoneSelectedSK };
+
+                Cursor cursorCheck = dbcheck.query(
+                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                        projectionCheck,                               // The columns to return
+                        selectionCheck,                                // The columns for the WHERE clause
+                        selectionArgsCheck,                            // The values for the WHERE clause
+                        null,                                     // don't group the rows
+                        null,                                     // don't filter by row groups
+                        null                                      // The sort order
+                );
+
+                List itemNamesCheck = new ArrayList<>();
+                List itemPhoneNumbersCheck = new ArrayList<>();
+                List itemPKCheck = new ArrayList<>();
+                List itemLTKCheck = new ArrayList<>();
+                List itemSKCheck = new ArrayList<>();
+
+                while(cursorCheck.moveToNext()) {
+
+                    //names check
+                    String namecheck = cursorCheck.getString(cursorCheck.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_NAME));
+                    Log.i("i:", "name from database:"+namecheck);
+                    itemNamesCheck.add(namecheck);
+                    //phone number check
+                    String phonecheck = cursorCheck.getString(cursorCheck.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER));
+                    Log.i("i:", "phone from database:"+phonecheck);
+                    itemPhoneNumbersCheck.add(phonecheck);
+                    //public key check
+                    String pkcheck = cursorCheck.getString(cursorCheck.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                    Log.i("i:", "pk from database:"+pkcheck);
+                    itemPKCheck.add(pkcheck);
+                    //names check
+                    String ltkcheck = cursorCheck.getString(cursorCheck.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                    Log.i("i:", "ltk from database:"+ltkcheck);
+                    itemLTKCheck.add(namecheck);
+                    //names check
+                    String skcheck = cursorCheck.getString(cursorCheck.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
+                    Log.i("i:", "sk from database:"+skcheck);
+                    itemSKCheck.add(skcheck);
+
+                }
+                cursorCheck.close();
+
+
                 startSessionKeyProtocol(contactSelectedSK, phoneSelectedSK);
+
+                //TODO: check the values in my database after the session key was established
+
+                Cursor cursorCheckAfter = dbcheck.query(
+                        SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                        projectionCheck,                               // The columns to return
+                        selectionCheck,                                // The columns for the WHERE clause
+                        selectionArgsCheck,                            // The values for the WHERE clause
+                        null,                                     // don't group the rows
+                        null,                                     // don't filter by row groups
+                        null                                      // The sort order
+                );
+
+                List itemNamesCheckAfter = new ArrayList<>();
+                List itemPhoneNumbersCheckAfter = new ArrayList<>();
+                List itemPKCheckAfter = new ArrayList<>();
+                List itemLTKCheckAfter = new ArrayList<>();
+                List itemSKCheckAfter = new ArrayList<>();
+
+                while(cursorCheckAfter.moveToNext()) {
+
+                    //names check
+                    String namecheckAfter = cursorCheckAfter.getString(cursorCheckAfter.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_NAME));
+                    Log.i("i:", "name from database:"+namecheckAfter);
+                    itemNamesCheckAfter.add(namecheckAfter);
+                    //phone number check
+                    String phonecheckAfter = cursorCheckAfter.getString(cursorCheckAfter.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER));
+                    Log.i("i:", "phone from database:"+phonecheckAfter);
+                    itemPhoneNumbersCheckAfter.add(phonecheckAfter);
+                    //public key check
+                    String pkcheckAfter = cursorCheckAfter.getString(cursorCheckAfter.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                    Log.i("i:", "pk from database:"+pkcheckAfter);
+                    itemPKCheckAfter.add(pkcheckAfter);
+                    //names check
+                    String ltkcheckAfter = cursorCheckAfter.getString(cursorCheckAfter.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                    Log.i("i:", "ltk from database:"+ltkcheckAfter);
+                    itemLTKCheckAfter.add(namecheckAfter);
+                    //names check
+                    String skcheckAfter = cursorCheckAfter.getString(cursorCheckAfter.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
+                    Log.i("i:", "sk from database:"+skcheckAfter);
+                    itemSKCheckAfter.add(skcheckAfter);
+
+                }
+                cursorCheckAfter.close();
+
+
             }else{
                 if ((contactSelectedMessage!= null)&&(phoneSelectedMessage!=null)){
                     //check if it has a session key established in the database
@@ -486,7 +680,7 @@ public class PhoneBookActivity extends AppCompatActivity {
         values.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, "none");
 
         // Which row to update, based on the title
-        String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+        String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
         String[] selectionArgsUpdate = { phoneNumber };
 
         int count = db.update(
@@ -495,7 +689,7 @@ public class PhoneBookActivity extends AppCompatActivity {
                 selectionUpdate,
                 selectionArgsUpdate);
 
-        Log.i("I:", "Rows updated:"+count);
+        Log.i("I:", "Unset session key: Rows updated:"+count);
 
     }
 
@@ -538,7 +732,7 @@ public class PhoneBookActivity extends AppCompatActivity {
         nonceGenerated = nonceGenerated+ ":S:0";
         //last indicator :S:0 to say it is the first communication in the session key protocol
         sendSMS(user,phoneNumber,nonceGenerated);
-        finish();
+        //finish();
     }
 
 

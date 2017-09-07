@@ -39,7 +39,7 @@
         android:id="@+id/btnInsertQRCode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Insert QR Code"
+        android:text="Start protocol"
         android:textColor="@color/white"
         app:backgroundTint="@color/colorPrimary"
         android:layout_marginTop="240dp"

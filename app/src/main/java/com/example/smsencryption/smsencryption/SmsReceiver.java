@@ -142,13 +142,14 @@ public class SmsReceiver extends BroadcastReceiver{
                                 //run the protocol for public key exchange
                                 switch (stepProtocol) {
                                     case 0:
+
+
+                                        Log.i("I:","set the nonce to the value of:"+ receivedMessage);
+
                                         Constants.setHisNonce(receivedMessage);
                                         Utils u = new Utils();
                                         String myNonce = u.generateNonce();
                                         Constants.setMyNonce(myNonce);
-
-                                        Log.i("My nonce:", Constants.getMyNonce());
-                                        Log.i("His nonce:", Constants.getHisNonce());
 
                                         try {
 
@@ -258,7 +259,7 @@ public class SmsReceiver extends BroadcastReceiver{
                                                 valuesSK.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, "none");
 
                                                 // Which row to update, based on the title
-                                                String selectionUpdateSK = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                String selectionUpdateSK = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
                                                 String[] selectionArgsUpdateSK = { originatingPhoneNumber };
 
                                                 int count = dbpk.update(
@@ -266,8 +267,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         valuesSK,
                                                         selectionUpdateSK,
                                                         selectionArgsUpdateSK);
-
-                                                Log.i("I:", "Rows updated:"+count);
 
                                                 //delete the conversation from the message table from this user in my db
                                                 SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
@@ -280,9 +279,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 originatingPhoneNumber,
                                                         null
                                                 );
-
-                                                Log.i("deleted:", countDelete + "rows");
-
 
                                             }
 
@@ -300,7 +296,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                             Constants.setKeyForExchangeKeys(keyForExchangeKeys);
 
                                             String strKeyForExchange = new String(Hex.encodeHex(keyForExchangeKeys));
-                                            Log.i("KEY ON ENC:::", strKeyForExchange);
 
                                             String encryptedStringFirstPart = encryptSymmetric(firstPartWithoutEnc, keyForExchangeKeys);
 
@@ -365,7 +360,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                     if (!infoToDecrypt.isEmpty()) {
 
-
                                                         //check if the W has already been inserted before in the db
 
                                                         SMSEncryptionDbHelper mDbHelperUpdate = new SMSEncryptionDbHelper(context);
@@ -418,24 +412,17 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         byte[] toDecryptPart = Arrays.copyOfRange(receivedBytes, 16, receivedBytes.length);
 
                                                         String strHisNonce = new String(Hex.encodeHex(hisNoncePart));
-
-                                                        Log.i("His Nonce:", strHisNonce);
-                                                        Log.i("My Nonce:", Constants.getMyNonce());
                                                         Constants.setHisNonce(strHisNonce);
 
                                                         byte[] salt = generateHashFromNonces(Constants.getMyNonce(), Constants.getHisNonce());
 
                                                         Utils u2 = new Utils();
 
-                                                        Log.i("b4 deriving the W:", Constants.getW());
-
                                                         byte[] keyForExchangeKeys = u2.deriveKey(Constants.getW(), salt, 1, 128);
 
                                                         String strDecKey = new String(Hex.encodeHex(keyForExchangeKeys));
-                                                        Log.i("KEY ON DEC:::", strDecKey);
 
                                                         String strToDecrypt = new String(Hex.encodeHex(toDecryptPart));
-                                                        Log.i("string to dec::", strToDecrypt);
 
                                                         Constants.setKeyForExchangeKeys(keyForExchangeKeys);
                                                         String decryptedMessage = decryptSymmetric(toDecryptPart, keyForExchangeKeys);
@@ -444,8 +431,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         byte[] myNoncePart = Arrays.copyOfRange(decryptedBytes, 0, 16);
 
                                                         String myNoncePartString = new String(Hex.encodeHex(myNoncePart));
-
-                                                        Log.i("myNoncePartString:", myNoncePartString);
 
                                                         if (myNoncePartString.compareTo(Constants.getMyNonce()) == 0) {
                                                             //meaning that the message from Bob is alright and I can obtain the public key from B
@@ -480,11 +465,9 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             byte[] bytesMyPublicKey = Constants.getMyPublicKey().getEncoded();
                                                             String strMyPublicKey = new String(Hex.encodeHex(bytesMyPublicKey));
-                                                            Log.i("SEND: mypubkey:", strMyPublicKey);
 
                                                             byte[] bytesHisPublicKey = Constants.getHisPublicKey().getEncoded();
                                                             String strHisPublicKey = new String(Hex.encodeHex(bytesHisPublicKey));
-                                                            Log.i("SEND: hispubkey:", strHisPublicKey);
 
                                                             String messageToEncrypt = Constants.getHisNonce() + strMyPublicKey + strHisPublicKey;
                                                             byte[] messageBytesToEncrypt = Hex.decodeHex(messageToEncrypt.toCharArray());
@@ -534,12 +517,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                             if (itemIds.size()==0){
 
-                                                                Log.i("I:", "it is not saved in the database, first time to record it.");
-                                                                //todo: It is not saved in the db so save the key of Bob
-                                                                //save values on the database
-
-                                                                Log.i("I:", "contactName to be saved:"+ Constants.getHisContactName());
-
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, Constants.getHisContactName());
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
@@ -549,15 +526,12 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
 
-                                                                Log.i("I:", "Inserted row with id:"+newRowId);
                                                             }else{
-
-                                                                Log.i("I:", "it is already saved on the database. need to update it");
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strHisPublicKey);
 
                                                                 // Which row to update, based on the title
-                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
                                                                 String[] selectionArgsUpdate = { originatingPhoneNumber };
 
                                                                 int count = db.update(
@@ -566,19 +540,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         selectionUpdate,
                                                                         selectionArgsUpdate);
 
-                                                                Log.i("I:", "Rows updated:"+count);
+                                                                Log.i("I:","UPDATING THE VALUE OF PUBLIC KEY BOB TO:"+ strHisPublicKey);
 
                                                             }
 
-                                                            //TODO: Calculate length without the encryption
-
-                                                            String message = new String(Hex.encodeHex(messageBytesToEncrypt));
-                                                            Log.i("SENDING: ", message);
 
                                                             String finalMessage = encryptSymmetric(messageBytesToEncrypt, keyForExchangeKeys);
                                                             finalMessage = finalMessage + ":P:2";
-                                                            Log.i("Final msg for step 2:", finalMessage);
-
 
                                                             //clear the variables to be reused on next transmission
                                                             Constants.setNumberMessages(0);
@@ -638,8 +606,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                         try {
                                             if (arr.length > 2) {
 
-                                                Log.i("arr[0]:", arr[0]);
-                                                Log.i("received msg:", receivedMessage);
                                                 String[] arrSplit2 = arr[0].split("\\*");
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
@@ -653,36 +619,21 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
 
-                                                        String strReceived = new String(Hex.encodeHex(receivedBytes));
-
-                                                        Log.i("Step 2: msg received:", strReceived);
-
                                                         String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
 
                                                         byte[] decryptedBytes = Hex.decodeHex(decryptedMessage.toCharArray());
-
-                                                        Log.i("Size of decr bytes:", String.valueOf(decryptedBytes.length));
 
                                                         byte[] noncePart = Arrays.copyOfRange(decryptedBytes, 0, 16);
 
                                                         String noncePartReceived = new String(Hex.encodeHex(noncePart));
 
-                                                        Log.i("Nonce part received:", noncePartReceived);
-
                                                         if (noncePartReceived.compareTo(Constants.getMyNonce()) == 0) {
-
-                                                            Log.i("info:", "nonce part received corresponds!");
 
                                                             byte[] publicKeyA = Arrays.copyOfRange(decryptedBytes, 16, 310);
                                                             byte[] publicKeyB = Arrays.copyOfRange(decryptedBytes, 310, 604);
 
-                                                            //TODO: check if the obtained pub keys correspond
-
                                                             String strPubKeyA = new String(Hex.encodeHex(publicKeyA));
                                                             String strPubKeyB = new String(Hex.encodeHex(publicKeyB));
-
-
-                                                            //TODO: check if it has been recorded previously
 
                                                             SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
 
@@ -700,7 +651,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
                                                             };
 
-                                                            // Filter results WHERE "title" = 'My Title'
                                                             String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
                                                             String[] selectionArgs = { originatingPhoneNumber };
 
@@ -729,10 +679,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             ContentValues values = new ContentValues();
 
                                                             if (itemIds.size()==0){
-                                                                //todo: It is not saved in the db so save the key of Alice
-                                                                Log.i("I:", "it is not saved in the database, first time to record it.");
-
-                                                                Log.i("I: contactName:", Constants.getHisContactName());
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_NAME, Constants.getHisContactName());
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER, originatingPhoneNumber);
@@ -742,15 +688,12 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 //Insert the row
                                                                 long newRowId = dbw.insert(SMSEncryptionContract.Directory.TABLE_NAME, null, values);
-                                                                Log.i("I:", "Value inserted with id:"+newRowId);
                                                             }else{
-
-                                                                Log.i("I:", "it is already saved on the database. need to update it");
 
                                                                 values.put(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY, strPubKeyA);
 
                                                                 // Which row to update, based on the title
-                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                                String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
                                                                 String[] selectionArgsUpdate = { originatingPhoneNumber };
 
                                                                 int count = db.update(
@@ -758,24 +701,48 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         values,
                                                                         selectionUpdate,
                                                                         selectionArgsUpdate);
-                                                                Log.i("I:", "Rows updated:"+count);
-                                                            }
+                                                                Log.i("I:", "UPDATING PUB KEY OF A TO:"+ strPubKeyA);
 
-                                                            Log.i("Pub key A obtained:", strPubKeyA);
-                                                            Log.i("Pub key B obtained:", strPubKeyB);
+                                                            }
 
                                                             String myPubKey = new String(Hex.encodeHex(Constants.getMyPublicKey().getEncoded()));
 
-                                                            if (strPubKeyB.compareTo(myPubKey)==0) {
+                                                            //TODO: here I should compare strPubKey with the one in my db (my public key)
+
+                                                            TelephonyManager tMgr = (TelephonyManager)context.getSystemService(context.TELEPHONY_SERVICE);
+                                                            String myPhoneNumber = tMgr.getLine1Number();
+
+                                                            String selectionMyself = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                            String[] selectionArgsMyself = { myPhoneNumber };
+
+                                                            Cursor cursorMyself = db.query(
+                                                                    SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                                    projection,                               // The columns to return
+                                                                    selectionMyself,                                // The columns for the WHERE clause
+                                                                    selectionArgsMyself,                            // The values for the WHERE clause
+                                                                    null,                                     // don't group the rows
+                                                                    null,                                     // don't filter by row groups
+                                                                    null                                      // The sort order
+                                                            );
+
+                                                            List itemPubKeys = new ArrayList<>();
+                                                            while(cursorMyself.moveToNext()) {
+                                                                String itemPubKey = cursorMyself.getString(
+                                                                        cursorMyself.getColumnIndexOrThrow(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                                                                itemPubKeys.add(itemPubKey);
+                                                            }
+                                                            cursorMyself.close();
+
+
+                                                            if (strPubKeyB.compareTo(itemPubKeys.get(0).toString())==0) {
 
                                                                 PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyA));
+
                                                                 Constants.setHisPublicKey(hisPublicKey);
 
                                                                 String messageToBeSent = encryptSymmetric(Constants.getHisPublicKey().getEncoded(), Constants.getKeyForExchangeKeys());
 
                                                                 messageToBeSent = messageToBeSent + ":P:3";
-
-                                                                Log.i("before sending step 3:", messageToBeSent);
 
                                                                 //clear the variables to be reused on next transmission
                                                                 Constants.setNumberMessages(0);
@@ -842,7 +809,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                             if (arr.length > 2) {
 
                                                 String[] arrSplit3 = arr[0].split("\\*");
-                                                Log.i("get number of msgs:", String.valueOf(Constants.getNumberMessages()));
 
                                                 Constants.setNumberMessages(Constants.getNumberMessages() + 1);
                                                 Constants.setDecryptionMessage(Constants.getDecryptionMessage() + arrSplit3[1]);
@@ -856,22 +822,15 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
 
                                                         String strReceived = new String(Hex.encodeHex(receivedBytes));
-                                                        Log.i("Step 3: msg received:", strReceived);
 
                                                         String decryptedMessage = decryptSymmetric(receivedBytes, Constants.getKeyForExchangeKeys());
 
-                                                        Log.i("decrypted msg step 3:", decryptedMessage);
-
                                                         byte[] decryptedBytes = Hex.decodeHex(decryptedMessage.toCharArray());
                                                         String pubKeyStr = new String(Hex.encodeHex(decryptedBytes));
-                                                        //PublicKey receivedPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decryptedBytes));
-                                                        Log.i("pub key dec:", pubKeyStr);
-                                                        //check my public key stored
+
                                                         PublicKey pk = Constants.getMyPublicKey();
                                                         byte[] pkencoded = pk.getEncoded();
                                                         String pubKeyEncoded = new String(Hex.encodeHex(pkencoded));
-
-                                                        Log.i("my pubkey: ", pubKeyEncoded);
 
                                                         //I need to compare if it corresponds to my own public key
                                                         if (pubKeyStr.compareTo(pubKeyEncoded)==0) {
@@ -880,8 +839,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             Constants.setNumberMessages(0);
                                                             Constants.setDecryptionMessage("");
 
-                                                            Log.i("i:","Success! the protocol has been established");
-                                                            //success, the protocol has been established
                                                             SmsManager smsManager = SmsManager.getDefault();
 
                                                             PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
@@ -893,8 +850,6 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     "Success! Protocol has been established:E", sentIntent, null);
 
                                                             Toast.makeText(context, "Success!, the protocol has been established", Toast.LENGTH_SHORT).show();
-
-                                                            //return to the phonebook list and show the new added contact
 
                                                             Intent i = new Intent(context, PhoneBookActivity.class);
                                                             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -924,6 +879,9 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                 //return to the phonebook list and show the new added contact
 
+                                Constants.setNumberMessages(0);
+                                Constants.setDecryptionMessage("");
+
                                 Intent i = new Intent(context, PhoneBookActivity.class);
                                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 context.startActivity(i);
@@ -938,7 +896,11 @@ public class SmsReceiver extends BroadcastReceiver{
                                             //send sms step S:1
                                             switch (stepProtocol) {
                                                 case 0:
-                                                    Log.i("nonce received: ", receivedMessage);
+
+                                                    Log.i("I:", "S:0: my long term key W is:"+ Constants.getW());
+
+                                                    Log.i("I:", "S:0: set his nonce to:"+ receivedMessage);
+
                                                     Constants.setHisNonce(receivedMessage);
 
                                                     //clear these variables just in case
@@ -950,11 +912,74 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     String nonceGenerated = u.generateNonce();
                                                     Constants.setMyNonce(nonceGenerated);
 
-                                                    Log.i("nonce generated at beg:", nonceGenerated);
+                                                    Log.i("I:","S:0: Nonce generated:"+ Constants.getMyNonce());
 
-                                                    //append the nonce received to my nonce and send it
                                                     String messageToSend = Constants.getMyNonce() + Constants.getHisNonce();
+
                                                     messageToSend = messageToSend + ":S:1";
+
+                                                    Log.i("I:", "S:0: message to send in S:1:"+messageToSend);
+
+                                                    //check if the W was set or not
+
+                                                    SMSEncryptionDbHelper mDbHelperLTK = new SMSEncryptionDbHelper(context);
+
+                                                    SQLiteDatabase dbLTK = mDbHelperLTK.getReadableDatabase();
+
+                                                    String[] projectionLTK = {
+                                                            SMSEncryptionContract.Directory._ID,
+                                                            SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
+                                                            SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
+                                                            SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY,
+                                                            SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY,
+                                                            SMSEncryptionContract.Directory.COLUMN_SESSION_KEY
+
+                                                    };
+
+                                                    // Filter results WHERE "title" = 'My Title'
+                                                    String selectionLTK = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                    String[] selectionArgsLTK = { originatingPhoneNumber };
+
+                                                    Cursor cursorLTK = dbLTK.query(
+                                                            SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
+                                                            projectionLTK,                               // The columns to return
+                                                            selectionLTK,                                // The columns for the WHERE clause
+                                                            selectionArgsLTK,                            // The values for the WHERE clause
+                                                            null,                                     // don't group the rows
+                                                            null,                                     // don't filter by row groups
+                                                            null                                      // The sort order
+                                                    );
+
+                                                    List itemLongTermKeys1 = new ArrayList();
+                                                    List itemHisPK = new ArrayList<>();
+
+                                                    while(cursorLTK.moveToNext()) {
+                                                        String longTermKeyStr = cursorLTK.getString(cursorLTK.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
+                                                        itemLongTermKeys1.add(longTermKeyStr);
+
+                                                        Log.i("I:", "S:0: Long term key from db of ALice:"+ longTermKeyStr);
+
+                                                        String hisPK = cursorLTK.getString(cursorLTK.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
+                                                        itemHisPK.add(hisPK);
+
+                                                        Log.i("I:", "S:0: Public key from Alice:"+ hisPK);
+                                                    }
+                                                    cursorLTK.close();
+
+                                                    if ((itemLongTermKeys1.size()>0)&&(itemHisPK.size()>0)){
+                                                        Constants.setW(itemLongTermKeys1.get(0).toString());
+
+                                                        Log.i("I:", "S:0: setting long term key to:"+ itemLongTermKeys1.get(0).toString());
+
+                                                        try{
+                                                            byte[] bytesPublicKey = Hex.decodeHex(itemHisPK.get(0).toString().toCharArray());
+                                                            PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesPublicKey));
+                                                            Constants.setHisPublicKey(hisPublicKey);
+                                                        }//string to public key
+                                                        catch(Exception e){
+                                                            e.printStackTrace();
+                                                        }
+                                                    }
 
                                                     SmsManager smsManager = SmsManager.getDefault();
 
@@ -971,11 +996,10 @@ public class SmsReceiver extends BroadcastReceiver{
                                                     break;
                                                 case 1:
 
+                                                    Log.i("I:", "S:1: Get the w:"+ Constants.getW());
                                                     //clear these variables just in case
                                                     Constants.setNumberMessages(0);
                                                     Constants.setDecryptionMessage("");
-
-                                                    Log.i("message received:S:1:", receivedMessage);
 
                                                     //from this message since the nonces are new, alice should check his nonce appended
                                                     try{
@@ -989,25 +1013,33 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         String naReceivedStr = new String(Hex.encodeHex(bytesNa));
                                                         String nbReceivedStr = new String(Hex.encodeHex(bytesNb));
 
+                                                        Log.i("I:", "S:1: nonce A received:"+ naReceivedStr);
+                                                        Log.i("I:", "S:1: nonce B received:"+ nbReceivedStr);
+
                                                         if (Constants.getMyNonce().compareTo(naReceivedStr)==0){
                                                             //meaning that it is okay and we can proceed with next step
-
                                                             Constants.setHisNonce(nbReceivedStr);
-
                                                             //generate a hash as salt and a material also passed to generate a key
                                                             Utils u2 = new Utils();
 
                                                             byte[] salt = new byte[0];
                                                             try {
                                                                 String strMaterial = Constants.getHisNonce()+Constants.getMyNonce();
+
+                                                                Log.i("I:","S:1: strMaterial is:"+ strMaterial);
+
+                                                                Log.i("I:", "S:1: his nonce is:"+ Constants.getHisNonce());
+
+                                                                Log.i("I:", "S:1: my nonce is:"+ Constants.getMyNonce());
+
                                                                 salt = generateHashFromNonces(Constants.getHisNonce(), Constants.getMyNonce());
 
                                                                 byte[] sessionKey = u2.deriveKey(strMaterial, salt, 1, 128);
 
                                                                 String sessionKeyStr = new String(Hex.encodeHex(sessionKey));
-                                                                Log.i("session key generated:", sessionKeyStr);
-
                                                                 Constants.setSessionKey(sessionKeyStr);
+
+                                                                Log.i("I:", "S:1: session key generated:"+sessionKeyStr);
 
                                                                 //get his public key from the database
                                                                 SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
@@ -1043,45 +1075,42 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                 while(cursorPK.moveToNext()) {
                                                                     String pubKey = cursorPK.getString(cursorPK.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_NAME_PUBLICKEY));
-                                                                    Log.i("i:", "public key from database:"+pubKey);
-                                                                    itemPublicKeys.add(pubKey);
+                                                                        itemPublicKeys.add(pubKey);
 
                                                                     String longTermKeyStr = cursorPK.getString(cursorPK.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
-                                                                    Log.i("i:", "long term key from database:"+longTermKeyStr);
                                                                     itemLongTermKeys.add(longTermKeyStr);
                                                                 }
                                                                 cursorPK.close();
 
                                                                 //public key is obtained from the database
-
                                                                 String hisPublicKeyStr = itemPublicKeys.get(0).toString();
-                                                                Log.i("Pub key already set:", hisPublicKeyStr);
+
+                                                                Log.i("I:","S:1: his public key from db is:"+ hisPublicKeyStr);
 
                                                                 String hisLongTermKeyFromDB = itemLongTermKeys.get(0).toString();
-                                                                Log.i("Long term key shared:", hisLongTermKeyFromDB);
+
+                                                                Log.i("I:","S:1: his long term key from db is:"+ hisLongTermKeyFromDB);
 
                                                                 try {
                                                                     byte[] bytesPublicKey = Hex.decodeHex(hisPublicKeyStr.toCharArray());
                                                                     PublicKey hisPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytesPublicKey));
 
-                                                                    //do the asymmetric encryption for the first part
                                                                     String encryptedFirstPart = encryptAsymmetric(sessionKey, hisPublicKey);
-                                                                    String secondPartToEncrypt = Constants.getHisNonce() + hisLongTermKeyFromDB;
+                                                                    Log.i("I:","S:1: encrypted first part is:"+encryptedFirstPart);
 
-                                                                    //encrypt symmetric the second part with the key already generated before
+                                                                    String secondPartToEncrypt = Constants.getHisNonce() + hisLongTermKeyFromDB;
 
                                                                     byte[] secondPartToEncryptInBytes = Hex.decodeHex(secondPartToEncrypt.toCharArray());
 
                                                                     String encryptedSecondPart = encryptSymmetric(secondPartToEncryptInBytes, sessionKey);
 
-                                                                    //concatenate both parts
+                                                                    Log.i("I:", "S:1: encrypted second part is:"+encryptedSecondPart);
 
                                                                     String finalMessage = encryptedFirstPart + encryptedSecondPart;
 
-                                                                    Log.i("I:","final message to send after receiving step :S:1:"+finalMessage);
-                                                                    //now send this message to the sender
-
                                                                     finalMessage = finalMessage + ":S:2";
+
+                                                                    Log.i("I:", "S:1: final message is:"+ finalMessage);
 
                                                                     Utils u4 = new Utils();
                                                                     //send the message to receiver
@@ -1157,23 +1186,21 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                 if (!infoToDecrypt.isEmpty()) {
                                                                     try {
                                                                         byte[] receivedBytes = Hex.decodeHex(infoToDecrypt.toCharArray());
+
                                                                         //from here need to decrypt the first part asymmetrically and the second part symmetrically
                                                                         String strReceived = new String(Hex.encodeHex(receivedBytes));
-                                                                        Log.i("str received:", strReceived);
+
+                                                                        Log.i("I:", "S:2: str received:"+ strReceived);
 
                                                                         byte[] firstPartToDecrypt = new byte[256];
+
                                                                         System.arraycopy(receivedBytes, 0, firstPartToDecrypt, 0, firstPartToDecrypt.length);
 
                                                                         int secondPartSize =receivedBytes.length - 256;
+
                                                                         byte[] secondPartToDecrypt = new byte[secondPartSize];
 
                                                                         System.arraycopy(receivedBytes, 256, secondPartToDecrypt, 0, secondPartSize);
-
-                                                                        //use the first part for the public key asymmetric decryption: need to read the
-                                                                        //private key from file first
-
-                                                                        //check if it is set first
-                                                                        if (Constants.getMyPrivateKey()==null){
 
                                                                             Utils u3 = new Utils();
 
@@ -1183,32 +1210,42 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                                 if (privKeyFromDevice!=null){
                                                                                     //set in my current execution
+                                                                                    Log.i("I:","S:2: setting my private key from device");
                                                                                     Constants.setMyPrivateKey(privKeyFromDevice);
                                                                                 }
 
                                                                             }catch(Exception e){
+                                                                                Log.i("I:", "S:2: cannot read my private key");
                                                                                 e.printStackTrace();
                                                                             }
-                                                                        }
 
                                                                         PrivateKey myPk = Constants.getMyPrivateKey();
 
+                                                                        String strfirstpartdecrypt = new String(Hex.encodeHex(firstPartToDecrypt));
+
+                                                                        Log.i("I:","S:2: first part to decrypt:"+ strfirstpartdecrypt);
+
+                                                                        byte[] bytesMyPrivateKey = myPk.getEncoded();
+                                                                        String strMyPrivateKey = new String(Hex.encodeHex(bytesMyPrivateKey));
+
+                                                                        Log.i("I:", "S:2: strMyPrivateKey:"+ strMyPrivateKey);
+
                                                                         String firstDecryptionAsymmetric = decryptAsymmetric(firstPartToDecrypt, myPk);
 
-                                                                        Log.i("show me the kab:", firstDecryptionAsymmetric);
+                                                                        Log.i("I:", "S:2: first part after decryption:"+ firstDecryptionAsymmetric);
 
                                                                         String sessionKey = firstDecryptionAsymmetric;
                                                                         Constants.setSessionKey(sessionKey);
 
-                                                                        byte[] sessionKeyBytes = Hex.decodeHex(sessionKey.toCharArray());
+                                                                        Log.i("I:", "S:2: session key:"+ Constants.getSessionKey());
 
-                                                                        //now need to obtain the W from database
+                                                                        byte[] sessionKeyBytes = Hex.decodeHex(sessionKey.toCharArray());
 
                                                                         SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
 
-                                                                        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+                                                                        SQLiteDatabase dbb = mDbHelper.getReadableDatabase();
 
-                                                                        String[] projection = {
+                                                                        String[] projectionb = {
                                                                                 SMSEncryptionContract.Directory._ID,
                                                                                 SMSEncryptionContract.Directory.COLUMN_NAME_NAME,
                                                                                 SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER,
@@ -1218,36 +1255,38 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         };
 
                                                                         // Filter results WHERE "title" = 'My Title'
-                                                                        String selection = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
-                                                                        String[] selectionArgs = { originatingPhoneNumber };
+                                                                        String selectionb = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
+                                                                        String[] selectionArgsb = { originatingPhoneNumber };
 
-                                                                        Cursor cursor = db.query(
+                                                                        Cursor cursorb = dbb.query(
                                                                                 SMSEncryptionContract.Directory.TABLE_NAME,// The table to query
-                                                                                projection,                               // The columns to return
-                                                                                selection,                                // The columns for the WHERE clause
-                                                                                selectionArgs,                            // The values for the WHERE clause
+                                                                                projectionb,                               // The columns to return
+                                                                                selectionb,                                // The columns for the WHERE clause
+                                                                                selectionArgsb,                            // The values for the WHERE clause
                                                                                 null,                                     // don't group the rows
                                                                                 null,                                     // don't filter by row groups
                                                                                 null                                      // The sort order
                                                                         );
 
                                                                         List itemLTK = new ArrayList<>();
-                                                                        while(cursor.moveToNext()) {
-                                                                            String ltk = cursor.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
-                                                                            Log.i("i:", "lt key from database:"+ltk);
+                                                                        while(cursorb.moveToNext()) {
+                                                                            String ltk = cursorb.getString(cursorb.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_LONG_TERM_KEY));
                                                                             itemLTK.add(ltk);
                                                                         }
-                                                                        cursor.close();
+                                                                        cursorb.close();
 
                                                                         if (itemLTK.size()>0){
                                                                             //meaning that it is not set
                                                                             Constants.setW(itemLTK.get(0).toString());
-                                                                            Log.i("setting W to:", Constants.getW());
+                                                                            Log.i("I:", "S:2: W set from db: "+ Constants.getW());
+
                                                                         }
 
                                                                         //second part is accesible via symmetric encryption with the session key obtained in the step before
 
                                                                         String secondDecryptionSymmetric = decryptSymmetric(secondPartToDecrypt, sessionKeyBytes);
+
+                                                                        Log.i("I:", "S:2: second decryption symmetric string: "+ secondDecryptionSymmetric);
 
                                                                         byte[] secondDecryptionBytes = Hex.decodeHex(secondDecryptionSymmetric.toCharArray());
 
@@ -1259,25 +1298,21 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                         System.arraycopy(secondDecryptionBytes, 16, longTermPartBytes, 0 , remainSize);
 
                                                                         String strNonceToCheck = new String(Hex.encodeHex(nonceToCheck));
-                                                                        //check if it is equals to my nonce
-                                                                        Log.i("nonce to check:", strNonceToCheck);
+
+                                                                        Log.i("I:", "S:2: nonce to check:"+ strNonceToCheck);
 
                                                                         String strWToCheck = new String(Hex.encodeHex(longTermPartBytes));
-                                                                        Log.i("w obtained from dec:", strWToCheck);
 
-                                                                        Log.i("I: nonce to compare", Constants.getMyNonce());
-                                                                        Log.i("I: w to compare", Constants.getW());
-
+                                                                        Log.i("I:", "S:2: W to check:"+ strWToCheck);
 
                                                                         if (Constants.getMyNonce().compareTo(strNonceToCheck)==0){
-                                                                            //passed the first test, and also need to check second condition: W
 
-                                                                            Log.i("I:"," nonces correspond!");
+                                                                            Log.i("I:", "S:2: nonce to check corresponds, next validation is W");
 
                                                                             if (Constants.getW().compareTo(strWToCheck)==0){
-                                                                                //Success!
-                                                                                Log.i("I:", "SUCCESS!");
                                                                                 //send alice's nonce to alice encrypted with the session key
+
+                                                                                Log.i("I:", "S:2: W corresponds, now update the new session key in db");
 
                                                                                 byte[] messageBytes = Hex.decodeHex(Constants.getHisNonce().toCharArray());
 
@@ -1293,12 +1328,11 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                                 String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
                                                                                 String[] selectionArgsUpdate = { originatingPhoneNumber };
 
-                                                                                int count = db.update(
+                                                                                int count = dbb.update(
                                                                                         SMSEncryptionContract.Directory.TABLE_NAME,
                                                                                         values,
                                                                                         selectionUpdate,
                                                                                         selectionArgsUpdate);
-                                                                                Log.i("I:", "Rows updated:"+count);
 
                                                                                 String lastMessage = nonceEncrypted + ":S:3";
 
@@ -1316,13 +1350,13 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                                             }
                                                                             else{
-                                                                                errorReason = "SK Establishment: Long term key does not correspond";
+                                                                                errorReason = "S:2: SK Establishment: Long term key does not correspond";
                                                                                 sessionErrorKey = true;
                                                                             }
 
                                                                         }
                                                                         else{
-                                                                            errorReason = "SK Establishment: nonce received does not correspond";
+                                                                            errorReason = "S:2: SK Establishment: nonce received does not correspond";
                                                                             sessionErrorKey = true;
                                                                         }
                                                                     } catch (DecoderException e) {
@@ -1352,10 +1386,12 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             //update the session key in the database
                                                             ContentValues values = new ContentValues();
 
+                                                            Log.i("I:","S:3: need to update the session key to:"+ Constants.getSessionKey());
+
                                                             values.put(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY, Constants.getSessionKey());
 
                                                             // Which row to update, based on the title
-                                                            String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " LIKE ?";
+                                                            String selectionUpdate = SMSEncryptionContract.Directory.COLUMN_NAME_PHONENUMBER + " = ?";
                                                             String[] selectionArgsUpdate = { originatingPhoneNumber };
 
                                                             int count = db.update(
@@ -1363,7 +1399,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                                                     values,
                                                                     selectionUpdate,
                                                                     selectionArgsUpdate);
-                                                            Log.i("I:", "row updated count:"+count);
+
+                                                            Log.i("I:","S:3: updating # rows:"+ count);
 
                                                             //if this is okay then send a message to Bob saying the session key was correctly established
                                                             String confirmationMessage =  "Success: session key has been set in the receiver!";
@@ -1381,13 +1418,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                                             Toast.makeText(context, confirmationMessage, Toast.LENGTH_SHORT).show();
 
                                                         }else{
-                                                            errorReason= "SK Establishment: error: nonces does not correspond";
+                                                            errorReason= "S:3: SK Establishment: error: nonces does not correspond";
                                                             sessionErrorKey = true;
                                                         }
                                                     }
                                                     catch (DecoderException e) {
                                                         e.printStackTrace();
-                                                        errorReason= "SK Establishment: error in decryption last message";
+                                                        errorReason= "S:3: SK Establishment: error in decryption last message";
                                                         sessionErrorKey = true;
                                                     }
 
@@ -1398,8 +1435,8 @@ public class SmsReceiver extends BroadcastReceiver{
                                         else{
                                             if (protocolId.compareTo("M")==0){
                                                 //decrypt the message received and save it on the db
-                                                Log.i("LAST MESSAGE: ", receivedMessage);
 
+                                                Log.i("I:", "M: Sending a message with session key established");
                                                 SMSEncryptionDbHelper mDbHelperSK = new SMSEncryptionDbHelper(context);
 
                                                 SQLiteDatabase dbSK = mDbHelperSK.getReadableDatabase();
@@ -1430,13 +1467,13 @@ public class SmsReceiver extends BroadcastReceiver{
                                                 List itemSessionKey = new ArrayList<>();
                                                 while(cursor.moveToNext()) {
                                                     String sessionKey = cursor.getString(cursor.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
-                                                    Log.i("i:", "session key from database:"+sessionKey);
                                                     itemSessionKey.add(sessionKey);
+                                                    Log.i("I:", "M: Session key from db: "+sessionKey);
                                                 }
                                                 cursor.close();
 
                                                 if (itemSessionKey.get(0).toString().compareTo("none")==0){
-                                                    Toast.makeText(context, "Error: The session key has not been established.", Toast.LENGTH_SHORT).show();
+                                                    Toast.makeText(context, "M: Error: The session key has not been established.", Toast.LENGTH_SHORT).show();
                                                 }else{
                                                     try {
 
@@ -1448,18 +1485,14 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         String decryptedMessage = decryptSymmetrically(receivedBytes, sessionKeyBytes);
 
-                                                        Toast.makeText(context, "Message: "+decryptedMessage, Toast.LENGTH_SHORT).show();
+                                                        Toast.makeText(context, "M: Message: "+decryptedMessage, Toast.LENGTH_SHORT).show();
                                                         // this message should be inserted into the database
 
                                                         Utils utilities = new Utils();
 
                                                         SQLiteDatabase dbw = mDbHelperSK.getWritableDatabase();
                                                         ContentValues values = new ContentValues();
-                                                        Log.i("I:", "it is not saved in the database, first time to record it.");
-                                                        //todo: It is not saved in the db so save the key of Bob
                                                         //save values on the database
-
-                                                        Log.i("I:", "contactName to be saved:"+ Constants.getHisContactName());
 
                                                         values.put(SMSEncryptionContract.Messages.COLUMN_SENDER_PHONENUMBER, originatingPhoneNumber);
                                                         values.put(SMSEncryptionContract.Messages.COLUMN_RECEIVER_PHONENUMBER, Constants.getReceiverPhoneNumber());
@@ -1468,7 +1501,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         //Insert the row
                                                         long newRowId = dbw.insert(SMSEncryptionContract.Messages.TABLE_NAME, null, values);
-
 
                                                         SMSEncryptionDbHelper mDbHelper = new SMSEncryptionDbHelper(context);
                                                         SQLiteDatabase db = mDbHelper.getReadableDatabase();
@@ -1500,7 +1532,6 @@ public class SmsReceiver extends BroadcastReceiver{
 
                                                         while(cursorDb.moveToNext()) {
                                                             String sk = cursorDb.getString(cursorDb.getColumnIndex(SMSEncryptionContract.Directory.COLUMN_SESSION_KEY));
-                                                            Log.i("i:", "intent: session key from database:"+sk);
                                                             itemSK.add(sk);
 
                                                         }
@@ -1512,11 +1543,14 @@ public class SmsReceiver extends BroadcastReceiver{
                                                         String myPhoneNumber = tMgr.getLine1Number();
 
                                                         i.putExtra("SESSION_KEY", itemSK.get(0).toString());
+
+                                                        Log.i("I:", "Extras: RECEIVER_PHONENUMBER:"+ originatingPhoneNumber);
+                                                        Log.i("I:", "Extras: MYPHONENUMBER:"+ myPhoneNumber);
+
                                                         i.putExtra("RECEIVER_PHONENUMBER", originatingPhoneNumber);
                                                         i.putExtra("MYPHONENUMBER", myPhoneNumber);
                                                         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                                         context.startActivity(i);
-
 
                                                     }catch(Exception e){
                                                         e.printStackTrace();
@@ -1553,9 +1587,6 @@ public class SmsReceiver extends BroadcastReceiver{
             encrypted = cipher.doFinal(message);
 
             String strEncrypted = new String(Hex.encodeHex(encrypted));
-
-            Log.i("Step 1: After enc:", strEncrypted);
-
             return strEncrypted;
         }
         catch(NoSuchAlgorithmException e){
@@ -1585,12 +1616,8 @@ public class SmsReceiver extends BroadcastReceiver{
             cipher.init(Cipher.ENCRYPT_MODE, key);
             encrypted = cipher.doFinal(message);
             String strEncrypted = new String(Hex.encodeHex(encrypted));
-
-            //TODO:check how many bytes implies this encryption
             byte[] bytesEncMessage = Hex.decodeHex(strEncrypted.toCharArray());
             int i =bytesEncMessage.length;
-
-            Log.i("size of the bytes:",String.valueOf(i));
             return strEncrypted;
         }
         catch(NoSuchAlgorithmException e){
@@ -1625,8 +1652,6 @@ public class SmsReceiver extends BroadcastReceiver{
             byte[] keyBytes = secretKeySpec.getEncoded();
             String strKeyBytes = new String(Hex.encodeHex(keyBytes));
 
-            Log.i("DEC: KEY BYTES STR:", strKeyBytes);
-
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
 
@@ -1645,15 +1670,11 @@ public class SmsReceiver extends BroadcastReceiver{
         byte[] clearText = null;
 
         try {
-            String strEncrypted = new String(Hex.encodeHex(message));
-            Log.i("DEC:B4 DEC:", strEncrypted);
 
             SecretKey secretKeySpec = new SecretKeySpec(key, "AES");
 
             byte[] keyBytes = secretKeySpec.getEncoded();
             String strKeyBytes = new String(Hex.encodeHex(keyBytes));
-
-            Log.i("DEC: KEY BYTES STR:", strKeyBytes);
 
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
@@ -1674,7 +1695,6 @@ public class SmsReceiver extends BroadcastReceiver{
         byte[] decryptedBytes;
         try {
             String strEncrypted = new String(Hex.encodeHex(message));
-            Log.i("I:asymmetric dec:", strEncrypted);
 
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, key);
